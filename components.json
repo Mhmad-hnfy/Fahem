@@ -12,14 +12,18 @@
   },
   "iconLibrary": "lucide",
   "rtl": false,
+  "menuColor": "default",
+  "menuAccent": "subtle",
   "aliases": {
-    "components": "@/components",
+    "components": "@/Components",
     "utils": "@/lib/utils",
-    "ui": "@/components/ui",
+    "ui": "@/Components/ui",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "menuColor": "default",
-  "menuAccent": "subtle",
-  "registries": {}
+  "registries": {
+    "@animate-ui": "https://animate-ui.com/r/{name}.json",
+    "@react-bits": "https://reactbits.dev/r/{name}.json",
+    "@magicui": "https://magicui.design/r/{name}"
+  }
 }

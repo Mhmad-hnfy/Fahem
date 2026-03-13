@@ -1,42 +1,216 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
+import { X, Menu, User, LogOut, LayoutDashboard } from "lucide-react";
+import Link from "next/link";
+import { useGlobalStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 
 function Header() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { currentUser, logoutUser } = useGlobalStore();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logoutUser();
+    setIsMobileMenuOpen(false);
+    router.push("/");
+  };
+
+  const navLinks = [
+    { name: "الرئيسية", href: "/" },
+    { name: "المسارات التعليمية", href: "/courses" },
+    { name: "المدرسين", href: "/Team" },
+    { name: "من نحن", href: "#about" },
+    { name: "تواصل معنا", href: "#contact" },
+  ];
+
   return (
-    <header className="bg-white border-b border-gray-200">
-      <nav className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button className="p-2 hover:bg-gray-100 rounded-lg lg:hidden">
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    <header className="bg-white sticky top-0 z-[1000] border-b border-red-100 shadow-sm w-full font-bold">
+      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-3">
+          {/* Logo */}
+          <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-rose-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-200">
+            <span className="text-white font-black text-2xl leading-none pt-1">
+              ف
+            </span>
+          </div>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-700 to-red-500 tracking-tight">
+            فاهم
+          </h1>
+        </Link>
+
+        {/* Desktop Nav */}
+        <div className="hidden lg:flex items-center gap-8">
+          {navLinks.map((link) => (
+            <Link
+              key={link.name}
+              href={link.href}
+              className={`text-lg transition-colors ${
+                link.href === "/" ? "text-red-600 relative after:absolute after:-bottom-1 after:right-0 after:w-full after:h-0.5 after:bg-red-600 after:rounded-full" : "text-gray-600 hover:text-red-600"
+              }`}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h16"
-              />
-            </svg>
+              {link.name}
+            </Link>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          {currentUser ? (
+            <div className="hidden sm:flex items-center gap-4">
+               {currentUser.role === "admin" && (
+                 <Link
+                    href="/admin"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-md"
+                 >
+                    <LayoutDashboard size={18} />
+                    لوحة التحكّم
+                 </Link>
+               )}
+               <Link
+                href="/profile"
+                className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-all border border-red-100"
+              >
+                <User size={18} />
+                حسابي
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="p-2.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
+                title="تسجيل الخروج"
+              >
+                <LogOut size={22} />
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="hidden sm:inline-block px-5 py-2.5 text-red-600 hover:bg-red-50 rounded-xl transition-all border border-red-200"
+              >
+                تسجيل الدخول
+              </Link>
+              <Link
+                href="/register"
+                className="px-6 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-xl shadow-md hover:shadow-xl hover:-translate-y-0.5 transition-all text-sm sm:text-base"
+              >
+                حساب جديد
+              </Link>
+            </>
+          )}
+
+          {/* Mobile Menu Toggle */}
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg lg:hidden transition-colors"
+          >
+            {isMobileMenuOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
           </button>
-          <h1 className="text-xl font-bold text-blue-600">Menu</h1>
-        </div>
-        <div className="hidden lg:flex items-center gap-6">
-          <a href="#" className="font-medium text-gray-700 hover:text-blue-600">
-            Home
-          </a>
-          <a href="#" className="font-medium text-gray-700 hover:text-blue-600">
-            Services
-          </a>
-          <a href="#" className="font-medium text-gray-700 hover:text-blue-600">
-            About
-          </a>
-        </div>
-        <div className="text-sm font-medium text-gray-500">
-          Tap for more info.
         </div>
       </nav>
+
+      {/* Mobile Menu Drawer */}
+      <div 
+        className={`lg:hidden fixed inset-0 z-[1100] transition-all duration-300 ${
+          isMobileMenuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        }`}
+      >
+        {/* Overlay */}
+        <div 
+          className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        
+        {/* Drawer Content */}
+        <div 
+          className={`absolute right-0 top-0 bottom-0 w-[85%] max-w-[320px] bg-white opacity-100 shadow-2xl transition-transform duration-300 transform border-l border-slate-100 ${
+            isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+          style={{ backgroundColor: '#ffffff', opacity: 1 }}
+        >
+          <div className="p-6 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-rose-600 rounded-lg flex items-center justify-center shadow-lg">
+                  <span className="text-white font-black text-xl leading-none pt-1">ف</span>
+                </div>
+                <span className="text-2xl font-black text-red-700">فاهم</span>
+              </Link>
+              <button 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <nav className="flex flex-col gap-2 flex-1">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`px-4 py-4 rounded-xl text-lg transition-all ${
+                    link.href === "/" ? "bg-red-50 text-red-600" : "text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {link.name}
+                </Link>
+              ))}
+              {currentUser?.role === "admin" && (
+                 <Link
+                    href="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-4 py-4 rounded-xl text-lg text-slate-900 hover:bg-slate-50 flex items-center gap-2"
+                 >
+                    <LayoutDashboard size={20} className="text-red-600" />
+                    لوحة التحكّم
+                 </Link>
+              )}
+            </nav>
+
+            <div className="pt-6 border-t border-slate-100 flex flex-col gap-3">
+              {currentUser ? (
+                <>
+                  <Link
+                    href="/profile"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full py-4 flex items-center justify-center gap-2 bg-red-50 text-red-600 rounded-2xl font-black"
+                  >
+                    <User size={20} />
+                    حسابي الشخصي
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full py-4 flex items-center justify-center gap-2 bg-slate-50 text-slate-600 rounded-2xl"
+                  >
+                    <LogOut size={20} />
+                    تسجيل الخروج
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full py-4 text-center text-red-600 rounded-xl transition-all border border-red-200"
+                  >
+                    تسجيل الدخول
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full py-4 text-center bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl shadow-lg"
+                  >
+                    إنشاء حساب جديد
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </header>
   );
 }
