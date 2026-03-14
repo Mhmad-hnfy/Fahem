@@ -57,7 +57,7 @@ const RegistrationPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("كلمتا المرور غير متطابقتين");
@@ -71,7 +71,7 @@ const RegistrationPage = () => {
         classId: parseInt(formData.classId)
     };
 
-    const result = registerUser(submissionData);
+    const result = await registerUser(submissionData);
     if (result.success) {
         router.push("/");
     } else {
