@@ -158,8 +158,9 @@ export default function UsersManagement() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-right border-collapse">
+        <div style={{ width: '100%', overflowX: 'scroll', WebkitOverflowScrolling: 'touch', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+          <div style={{ minWidth: '1800px' }}>
+            <table className="w-full text-right border-collapse">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
                 <th className="p-4 w-12 text-center">
@@ -173,6 +174,13 @@ export default function UsersManagement() {
                 </th>
                 <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">اسم الطالب</th>
                 <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">رقم الهاتف</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">واتساب</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">هاتف ولي الأمر</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">واتساب ولي الأمر</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">المدرسة</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">تاريخ الميلاد</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">النوع</th>
+                <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">الديانة</th>
                 <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">المرحلة</th>
                 <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">الصف</th>
                 <th className="p-4 font-bold text-slate-600 text-sm whitespace-nowrap">الحالة</th>
@@ -210,6 +218,13 @@ export default function UsersManagement() {
                       </div>
                     </td>
                     <td className="p-4 text-sm font-bold text-slate-700">{user.phone}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.whatsapp || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.parentPhone || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.parentWhatsapp || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.schoolName || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.birthDate || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.gender || "-"}</td>
+                    <td className="p-4 text-sm font-medium text-slate-600">{user.religion || "-"}</td>
                     <td className="p-4 text-sm font-medium text-slate-600">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">
                         <BookOpen className="w-3.5 h-3.5" />
@@ -292,6 +307,7 @@ export default function UsersManagement() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
 
         {/* Pagination Dummy */}

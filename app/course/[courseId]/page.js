@@ -114,7 +114,7 @@ export default function CoursePage({ params }) {
         {/* Chapters Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {chapters.map((chapter) => {
-            const isUnlocked = currentUser && unlockedChapters.some(u => u.userId === currentUser.id && u.chapterId === chapter.id);
+            const isUnlocked = (currentUser && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id)) || Number(chapter.price || 0) === 0;
             const chapterLessonsCount = lessons.filter(l => parseInt(l.chapterId) === parseInt(chapter.id)).length;
             
             return (
@@ -132,9 +132,14 @@ export default function CoursePage({ params }) {
                   {chapter.name}
                 </h3>
 
-                <div className="mt-2 text-sm font-bold text-slate-500 z-10 relative flex items-center justify-center gap-2 bg-slate-50 px-4 py-1.5 rounded-full">
-                  <BookOpen className="w-4 h-4 text-slate-400" />
-                  <span>{chapterLessonsCount} دروس</span>
+                <div className="mt-2 flex flex-wrap items-center justify-center gap-2 z-10 relative">
+                  <div className="text-sm font-bold text-slate-500 flex items-center gap-2 bg-slate-50 px-4 py-1.5 rounded-full">
+                    <BookOpen className="w-4 h-4 text-slate-400" />
+                    <span>{chapterLessonsCount} دروس</span>
+                  </div>
+                  <div className="text-sm font-black text-red-600 bg-red-50 px-4 py-1.5 rounded-full">
+                    <span>{Number(chapter.price || 0) > 0 ? `${chapter.price} ج.م` : "مجاناً"}</span>
+                  </div>
                 </div>
 
                 {isUnlocked ? (

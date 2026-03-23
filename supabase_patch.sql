@@ -21,7 +21,9 @@ add column if not exists active boolean default true;
 alter table public.chapters
 add column if not exists lessons_count integer default 0,
 add column if not exists image text,
-add column if not exists active boolean default true;
+add column if not exists active boolean default true,
+add column if not exists price numeric default 0;
+
 
 -- 5. Updates to "lessons" table
 -- Note: 'video_url' and 'pdf_url' existed before, but app uses 'youtube_link' and 'pdf_file'

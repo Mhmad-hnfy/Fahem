@@ -30,7 +30,9 @@ export default function ChaptersManagement() {
       courseId: parseInt(formData.get("courseId"), 10),
       lessonsCount: parseInt(formData.get("lessonsCount"), 10),
       image: uploadedImage || "https://images.unsplash.com/photo-1546410531-bea5aadcb6ce?w=400&h=300&fit=crop",
+      price: parseFloat(formData.get("price")) || 0,
       active: formData.get("isActive") === "on",
+
     };
     addChapter(newChapter);
     setShowAddModal(false);
@@ -44,7 +46,9 @@ export default function ChaptersManagement() {
       courseId: parseInt(formData.get("courseId"), 10),
       lessonsCount: parseInt(formData.get("lessonsCount"), 10),
       image: uploadedImage || "https://images.unsplash.com/photo-1546410531-bea5aadcb6ce?w=400&h=300&fit=crop",
+      price: parseFloat(formData.get("price")) || 0,
       active: formData.get("isActive") === "on",
+
     };
     updateChapter(editingChapter.id, updatedChapter);
     setEditingChapter(null);
@@ -129,6 +133,11 @@ export default function ChaptersManagement() {
                   <span className="font-bold">
                     {chapter.lessonsCount} دروس
                   </span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 w-fit">
+                   <span className="font-black">
+                     {chapter.price > 0 ? `${chapter.price} ج.م` : "مجاناً"}
+                   </span>
                 </div>
               </div>
             </div>
@@ -215,6 +224,21 @@ export default function ChaptersManagement() {
                   min="0"
                   required
                   defaultValue={editingChapter ? editingChapter.lessonsCount : 0}
+                  className="w-full border border-slate-200 rounded-xl p-3 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">
+                  السعر (بالجنية المصري) - 0 للمجاني
+                </label>
+                <input
+                  name="price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  defaultValue={editingChapter ? editingChapter.price : 0}
                   className="w-full border border-slate-200 rounded-xl p-3 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
                 />
               </div>

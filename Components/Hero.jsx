@@ -46,27 +46,14 @@ function Hero() {
               
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
               <a href="/register">
-              <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
-                ابدأ رحلتك التعليمية الآن
-              </button>
+                <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
+                  ابدأ رحلتك التعليمية الآن
+                </button>
               </a>
-              <a href="/courses">
-              <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm border-2 border-slate-100 hover:border-red-100 hover:text-red-600 transition-all duration-300 text-lg flex items-center justify-center gap-3">
-                تصفح المسارات المتوفرة
-                <svg
-                  className="w-5 h-5 rtl:rotate-180"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M14 5l7 7m0 0l-7 7m7-7H3"
-                  />
-                </svg>
-              </button>
+              <a href="/parent/login">
+                <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm border-2 border-slate-100 hover:border-red-100 hover:text-red-600 transition-all duration-300 text-lg flex items-center justify-center gap-3">
+                  متابعة ولي الأمر
+                </button>
               </a>
             </div>
 

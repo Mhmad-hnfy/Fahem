@@ -18,6 +18,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="ar" dir="rtl">
+      <link rel="icon" href="/icon.png" />
       <body className={`${cairo.className} antialiased`}>
         <GlobalProvider>
           <HeaderWrapper />

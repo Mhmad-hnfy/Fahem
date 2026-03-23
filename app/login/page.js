@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { motion } from "motion/react";
-import { Phone, Lock, Eye, EyeOff, LogIn, UserPlus } from "lucide-react";
+import { Phone, Lock, Eye, EyeOff, LogIn, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useGlobalStore } from "@/lib/store";
@@ -141,6 +141,14 @@ const LoginPage = () => {
                   className="group-hover:scale-110 transition-transform"
                 />
                 إنشاء حساب طالب جديد
+              </Link>
+              <div className="h-px bg-white/10 my-4"></div>
+              <Link
+                href="/parent/login"
+                className="flex items-center justify-center gap-2 text-red-400 font-bold hover:text-red-300 transition-all text-sm group"
+              >
+                <Users size={16} />
+                دخول ولي الأمر لمتابعة مستوى الطالب
               </Link>
             </div>
           </form>

@@ -16,7 +16,7 @@ export default function ChapterLessonsPage({ params }) {
   const chapter = chapters.find(c => parseInt(c.id) === chapterId);
   const lessons = allLessons.filter(l => parseInt(l.chapterId) === chapterId && l.status === "نشط");
 
-  const isUnlocked = currentUser && unlockedChapters.some(u => u.userId === currentUser.id && u.chapterId === chapterId);
+  const isUnlocked = (currentUser && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapterId)) || (chapter && Number(chapter.price || 0) === 0);
 
   if (!chapter) {
     return (

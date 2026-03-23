@@ -29,7 +29,7 @@ export default function LessonDetailPage({ params }) {
   const router = useRouter();
   const lessonId = parseInt(unwrappedParams.lessonId, 10);
 
-  const { lessons, chapters, currentUser, unlockedChapters, lessonViews, incrementLessonView, verifyAndUseCode } = useGlobalStore();
+  const { lessons, chapters, currentUser, unlockedChapters, lessonViews, viewCounts, incrementLessonView, verifyAndUseCode } = useGlobalStore();
 
   const lesson = lessons.find(l => l.id === lessonId);
   const chapter = lesson ? chapters.find(c => c.id === parseInt(lesson.chapterId)) : null;
@@ -42,9 +42,9 @@ export default function LessonDetailPage({ params }) {
   const [isRedeeming, setIsRedeeming] = useState(false);
 
   // Access Control & View Tracking
-  const isUnlocked = currentUser && chapter && unlockedChapters.some(u => u.userId === currentUser.id && u.chapterId === chapter.id);
-  const userView = lessonViews.find(v => v.userId === currentUser?.id && v.lessonId === lessonId);
-  const currentViews = userView ? userView.viewCount : 0;
+  const isUnlocked = (currentUser && chapter && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id)) || (chapter && Number(chapter.price || 0) === 0);
+  const userView = (viewCounts || []).find(v => v.userId === currentUser?.id && v.lessonId === lessonId);
+  const currentViews = userView ? userView.count : 0;
   const maxViews = lesson?.maxViews || 5;
 
   const handleRedeemCode = (e) => {
