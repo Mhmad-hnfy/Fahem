@@ -181,7 +181,7 @@ export default function LessonsManagement() {
 
       {/* Lesson Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
           <div className="relative bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh] border border-white/20 animate-in fade-in zoom-in duration-300">
              <div className="bg-slate-950 p-8 text-white flex items-center justify-between">

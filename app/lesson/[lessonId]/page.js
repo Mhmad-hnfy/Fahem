@@ -40,6 +40,8 @@ export default function LessonDetailPage({ params }) {
   const [watermarkPos, setWatermarkPos] = useState({ top: 10, left: 10 });
   const [redeemCode, setRedeemCode] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
+  const [showControls, setShowControls] = useState(true);
+  const controlsTimeoutRef = useRef(null);
 
   // Access Control & View Tracking
   const isUnlocked = (currentUser && chapter && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id)) || (chapter && Number(chapter.price || 0) === 0);
@@ -121,7 +123,7 @@ export default function LessonDetailPage({ params }) {
         modestbranding: 1,
         rel: 0,
         iv_load_policy: 3,
-        fs: 0,
+        fs: 1,
         disablekb: 1,
       },
       events: {
@@ -187,6 +189,23 @@ export default function LessonDetailPage({ params }) {
     }
   }, [isUnlocked]);
 
+  // Auto-hide controls
+  useEffect(() => {
+    if (isPlaying && showControls) {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+      controlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 3000);
+    }
+    return () => {
+      if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
+    };
+  }, [isPlaying, showControls]);
+
+  const handleTouchPlayer = () => {
+    setShowControls(prev => !prev);
+  };
+
   if (!lessons || (lessons.length === 0 && !lesson)) {
     return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white" dir="rtl">جاري التحميل...</div>;
   }
@@ -249,16 +268,19 @@ export default function LessonDetailPage({ params }) {
     );
   }
 
-  const togglePlay = () => {
+  const togglePlay = (e) => {
+    if (e) e.stopPropagation();
     if (!player) return;
     if (isPlaying) {
       player.pauseVideo();
     } else {
       player.playVideo();
+      setShowControls(true);
     }
   };
 
   const handleSeek = (e) => {
+    e.stopPropagation();
     if (!player) return;
     const newProgress = parseFloat(e.target.value);
     const newTime = (newProgress / 100) * duration;
@@ -266,7 +288,8 @@ export default function LessonDetailPage({ params }) {
     setProgress(newProgress);
   };
 
-  const toggleFullScreen = () => {
+  const toggleFullScreen = (e) => {
+    if (e) e.stopPropagation();
     if (!containerRef.current) return;
     
     const isActuallyFull = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
@@ -287,6 +310,7 @@ export default function LessonDetailPage({ params }) {
   };
 
   const handleVolumeChange = (e) => {
+    e.stopPropagation();
     const val = parseInt(e.target.value);
     setVolume(val);
     if (player) {
@@ -296,7 +320,8 @@ export default function LessonDetailPage({ params }) {
     }
   };
 
-  const handleQualityChange = (q) => {
+  const handleQualityChange = (e, q) => {
+    e.stopPropagation();
     if (player) {
       player.setPlaybackQuality(q);
       setCurrentQuality(q);
@@ -377,27 +402,36 @@ export default function LessonDetailPage({ params }) {
            </div>
 
            {/* Custom Premium Video Player */}
-           <div ref={containerRef} className="relative aspect-video bg-black rounded-[32px] overflow-hidden shadow-2xl border border-white/5 group/player">
+           <div ref={containerRef} className="relative aspect-video bg-black rounded-[24px] md:rounded-[32px] overflow-hidden shadow-2xl border border-white/5 group/player z-[2000]">
               <div id="youtube-player" className="w-full h-full pointer-events-none"></div>
 
               {/* Watermark Overlay */}
               <div 
-                className="absolute pointer-events-none text-white/20 text-[10px] md:text-sm font-black select-none z-50 transition-all duration-1000 ease-in-out whitespace-nowrap text-center"
+                className="absolute pointer-events-none text-white/20 text-[8px] md:text-sm font-black select-none z-50 transition-all duration-1000 ease-in-out whitespace-nowrap text-center"
                 style={{ top: `${watermarkPos.top}%`, left: `${watermarkPos.left}%` }}
               >
                 {currentUser?.name} <br /> {currentUser?.phone} <br /> {new Date().toLocaleTimeString('ar-EG')}
               </div>
 
               {/* Custom Controls Overlay */}
-              <div className="absolute inset-0 bg-transparent z-[40]" onContextMenu={(e) => e.preventDefault()}>
+              <div className="absolute inset-0 bg-transparent z-[40]" onContextMenu={(e) => e.preventDefault()} onClick={handleTouchPlayer}>
                  {/* Protection Layer covers the center to prevent direct iframe clicks, but controls are accessible */}
-                 <div className="absolute inset-0 bg-transparent" onClick={togglePlay}></div>
+                 <div className="absolute inset-0 bg-transparent"></div>
+
+                 {/* Play/Pause Large indicator on tap */}
+                 {!showControls && isPlaying && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-20 h-20 bg-black/20 rounded-full flex items-center justify-center backdrop-blur-sm opacity-0 animate-ping">
+                           <Play className="w-10 h-10 text-white fill-current" />
+                        </div>
+                    </div>
+                 )}
 
                  {/* Controls Bar */}
-                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-6 opacity-0 group-hover/player:opacity-100 transition-opacity duration-300 z-[60]">
+                 <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent p-3 md:p-6 transition-all duration-300 z-[60] ${showControls ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"}`}>
                     
                     {/* Progress Bar */}
-                    <div className="mb-4 relative group/progress">
+                    <div className="mb-3 md:mb-4 relative group/progress">
                         <input 
                             type="range" 
                             min="0" 
@@ -409,63 +443,66 @@ export default function LessonDetailPage({ params }) {
                         <div className="absolute top-1/2 left-0 h-1.5 bg-red-600 rounded-full pointer-events-none group-hover/progress:h-2 -translate-y-1/2" style={{ width: `${progress}%` }}></div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-6">
+                    <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-3 md:gap-6">
                             <button onClick={togglePlay} className="text-white hover:text-red-500 transition-colors transform active:scale-90">
-                                {isPlaying ? <Pause className="w-8 h-8 fill-current" /> : <Play className="w-8 h-8 fill-current" />}
+                                {isPlaying ? <Pause className="w-6 h-6 md:w-8 md:h-8 fill-current" /> : <Play className="w-6 h-6 md:w-8 md:h-8 fill-current" />}
                             </button>
                             
-                            <div className="flex items-center gap-3 group/volume">
-                                <Volume2 className="w-6 h-6 text-white/70" />
+                            <div className="hidden sm:flex items-center gap-3 group/volume">
+                                <Volume2 className="w-5 h-5 text-white/70" />
                                 <input 
                                     type="range" 
                                     min="0" 
                                     max="100" 
                                     value={volume}
                                     onChange={handleVolumeChange}
-                                    className="w-20 lg:w-32 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-white"
+                                    className="w-16 lg:w-32 h-1 bg-white/20 rounded-full appearance-none cursor-pointer accent-white"
                                 />
                             </div>
 
-                            <div className="text-white/70 text-sm font-bold font-mono">
+                            <div className="text-white/70 text-[10px] md:text-sm font-bold font-mono">
                                 {player ? Math.floor(player.getCurrentTime() / 60) : "00"}:
-                                {player ? String(Math.floor(player.getCurrentTime() % 60)).padStart(2, '0') : "00"} / 
-                                {player ? Math.floor(duration / 60) : "00"}:
-                                {player ? String(Math.floor(duration % 60)).padStart(2, '0') : "00"}
+                                {player ? String(Math.floor(player.getCurrentTime() % 60)).padStart(2, '0') : "00"} 
+                                <span className="hidden md:inline"> / </span>
+                                <span className="hidden md:inline">
+                                    {player ? Math.floor(duration / 60) : "00"}:
+                                    {player ? String(Math.floor(duration % 60)).padStart(2, '0') : "00"}
+                                </span>
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4">
                             {/* Quality Selector */}
-                            <div className="flex gap-1 px-2 py-1 bg-white/10 rounded-xl backdrop-blur-md border border-white/5 overflow-x-auto max-w-[120px] md:max-w-none">
+                            <div className="flex gap-1 px-1.5 py-1 bg-white/10 rounded-xl backdrop-blur-md border border-white/5 overflow-x-auto max-w-[80px] md:max-w-none">
                                 {qualityLevels && qualityLevels.length > 0 ? (
                                     qualityLevels.filter(q => q !== 'auto').slice(0, 4).map(q => (
                                         <button 
                                             key={q}
-                                            onClick={() => handleQualityChange(q)}
-                                            className={`px-2 h-7 rounded-lg text-[10px] font-black transition-all flex-shrink-0 ${currentQuality === q ? "bg-red-600 text-white shadow-lg" : "text-white/50 hover:text-white"}`}
+                                            onClick={(e) => handleQualityChange(e, q)}
+                                            className={`px-1.5 h-6 rounded-lg text-[8px] md:text-[10px] font-black transition-all flex-shrink-0 ${currentQuality === q ? "bg-red-600 text-white shadow-lg" : "text-white/50 hover:text-white"}`}
                                         >
                                             {q.replace('hd', '').replace('small', '240p').replace('medium', '360p').replace('large', '480p')}
                                         </button>
                                     ))
                                 ) : (
-                                    <div className="text-[10px] px-2 py-1 text-white/30 font-bold">جاري التحميل...</div>
+                                    <div className="text-[8px] px-1 text-white/30 font-bold">جاري...</div>
                                 )}
                             </div>
 
-                            <div className="flex gap-1.5 px-3 py-1.5 bg-white/10 rounded-xl backdrop-blur-md border border-white/5">
-                                {[1, 1.25, 1.5, 2].map(s => (
+                            <div className="flex gap-1 px-1.5 py-1 bg-white/10 rounded-xl backdrop-blur-md border border-white/5">
+                                {[1, 1.5, 2].map(s => (
                                     <button 
                                         key={s}
-                                        onClick={() => setPlaybackSpeed(s)}
-                                        className={`w-8 h-7 rounded-lg text-[10px] font-black transition-all ${playbackSpeed === s ? "bg-red-600 text-white shadow-lg" : "text-white/50 hover:text-white"}`}
+                                        onClick={(e) => { e.stopPropagation(); setPlaybackSpeed(s); }}
+                                        className={`w-7 h-6 rounded-lg text-[8px] md:text-[10px] font-black transition-all ${playbackSpeed === s ? "bg-red-600 text-white shadow-lg" : "text-white/50 hover:text-white"}`}
                                     >
                                         {s}x
                                     </button>
                                 ))}
                             </div>
-                            <button onClick={toggleFullScreen} className="text-white/70 hover:text-white transition-colors">
-                                <Maximize className="w-6 h-6" />
+                            <button onClick={toggleFullScreen} className="text-white/70 hover:text-white transition-colors p-1">
+                                <Maximize className="w-5 h-5 md:w-6 md:h-6" />
                             </button>
                         </div>
                     </div>

@@ -184,7 +184,7 @@ function Hero() {
                 src={`https://www.youtube.com/embed/5jhwxSI939o?autoplay=1&modestbranding=1&rel=0`}
                 title="YouTube video player"
                 className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                 allowFullScreen
               ></iframe>
             </AspectRatio>
