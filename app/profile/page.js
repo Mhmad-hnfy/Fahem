@@ -16,12 +16,15 @@ import {
   School,
   ArrowRight,
   TrendingUp,
-  Activity
+  Activity,
+  Bell,
+  Trash2,
+  Clock
 } from "lucide-react";
 import Link from "next/link";
 
 export default function ProfilePage() {
-  const { currentUser, logoutUser, classes, categories, unlockedChapters, chapters: allChapters, courses, lessonViews, lessons } = useGlobalStore();
+  const { currentUser, logoutUser, classes, categories, unlockedChapters, chapters: allChapters, courses, lessonViews, lessons, notifications, dismissedNotifications, dismissNotification } = useGlobalStore();
   const router = useRouter();
 
   const analytics = React.useMemo(() => {
@@ -292,6 +295,60 @@ export default function ProfilePage() {
                    )}
                 </div>
              </div>
+
+              {/* Notifications Section */}
+              <div className="bg-white rounded-[40px] shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-8 border-b border-slate-50 flex items-center justify-between">
+                   <h3 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                      <Bell size={24} className="text-red-600" />
+                      التنبيهات والإشعارات
+                   </h3>
+                </div>
+                <div className="p-6">
+                   {notifications.filter(notif => {
+                        const isDismissed = dismissedNotifications.some(d => d.notificationId === notif.id && d.userId === currentUser.id);
+                        if (isDismissed) return false;
+                        if (notif.targetType === "all") return true;
+                        if (notif.targetType === "category" && notif.categoryId === currentUser.categoryId) return true;
+                        if (notif.targetType === "class" && notif.classId === currentUser.classId) return true;
+                        return false;
+                   }).length > 0 ? (
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                           {notifications.filter(notif => {
+                                const isDismissed = dismissedNotifications.some(d => d.notificationId === notif.id && d.userId === currentUser.id);
+                                if (isDismissed) return false;
+                                if (notif.targetType === "all") return true;
+                                if (notif.targetType === "category" && notif.categoryId === currentUser.categoryId) return true;
+                                if (notif.targetType === "class" && notif.classId === currentUser.classId) return true;
+                                return false;
+                           }).map(notif => (
+                               <div key={notif.id} className="p-6 bg-slate-50 rounded-[32px] border border-slate-100 relative group transition-all hover:bg-white hover:shadow-md">
+                                   <div className="flex justify-between items-start mb-3">
+                                       <h4 className="font-black text-slate-900 leading-tight">{notif.title}</h4>
+                                       <button 
+                                            onClick={() => dismissNotification(currentUser.id, notif.id)}
+                                            className="p-2 text-slate-300 hover:text-red-600 rounded-xl transition-all"
+                                            title="حذف الإشعار"
+                                       >
+                                            <Trash2 size={16} />
+                                       </button>
+                                   </div>
+                                   <p className="text-slate-500 text-sm leading-relaxed mb-4">{notif.message}</p>
+                                   <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                                       <Clock size={12} />
+                                       {new Date(notif.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' })}
+                                   </div>
+                               </div>
+                           ))}
+                       </div>
+                   ) : (
+                       <div className="text-center py-12">
+                           <Bell className="w-12 h-12 text-slate-100 mx-auto mb-3" />
+                           <p className="text-slate-400 font-bold text-sm">لا يوجد إشعارات نشطة حالياً</p>
+                       </div>
+                   )}
+                </div>
+              </div>
 
           </div>
 

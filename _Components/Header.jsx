@@ -1,15 +1,30 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Menu, User, LogOut, LayoutDashboard } from "lucide-react";
+import { X, Menu, User, LogOut, LayoutDashboard, Bell, Clock, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useGlobalStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 
 function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { currentUser, logoutUser } = useGlobalStore();
+  const { currentUser, logoutUser, notifications, dismissedNotifications, dismissNotification } = useGlobalStore();
   const router = useRouter();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+
+  // Filter relevant notifications for the current student
+  const studentNotifications = notifications.filter(notif => {
+    if (!currentUser || currentUser.role === "admin") return false;
+    
+    // Check if dismissed
+    const isDismissed = dismissedNotifications.some(d => d.notificationId === notif.id && d.userId === currentUser.id);
+    if (isDismissed) return false;
+
+    if (notif.targetType === "all") return true;
+    if (notif.targetType === "category" && notif.categoryId === currentUser.categoryId) return true;
+    if (notif.targetType === "class" && notif.classId === currentUser.classId) return true;
+    return false;
+  });
 
   const handleLogout = () => {
     logoutUser();
@@ -57,6 +72,78 @@ function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
+          {currentUser && currentUser.role !== "admin" && (
+            <div className="relative">
+                <button
+                    onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                    className="p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all relative"
+                    title="الإشعارات"
+                >
+                    <Bell size={24} />
+                    {studentNotifications.length > 0 && (
+                        <span className="absolute top-2 right-2 w-5 h-5 bg-red-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                            {studentNotifications.length}
+                        </span>
+                    )}
+                </button>
+
+                {/* Notifications Dropdown */}
+                {isNotificationsOpen && (
+                    <div className="absolute left-0 mt-3 w-80 bg-white border border-slate-100 shadow-2xl rounded-3xl z-[1100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" dir="rtl">
+                        <div className="p-4 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+                            <h3 className="font-black text-slate-800 flex items-center gap-2">
+                                <Bell size={18} className="text-red-600" />
+                                التنبيهات الجديدة
+                            </h3>
+                            <button onClick={() => setIsNotificationsOpen(false)} className="text-slate-400 hover:text-slate-600">
+                                <X size={18} />
+                            </button>
+                        </div>
+                        <div className="max-h-96 overflow-y-auto">
+                            {studentNotifications.length === 0 ? (
+                                <div className="p-10 text-center">
+                                    <Bell size={40} className="text-slate-100 mx-auto mb-3" />
+                                    <p className="text-slate-400 text-sm font-bold">لا توجد تنبيهات حالياً</p>
+                                </div>
+                            ) : (
+                                studentNotifications.map(notif => (
+                                    <div key={notif.id} className="p-4 border-b border-slate-50 hover:bg-slate-50 transition-colors group">
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div className="flex-1">
+                                                <h4 className="font-black text-slate-900 text-sm mb-1">{notif.title}</h4>
+                                                <p className="text-slate-500 text-xs leading-relaxed mb-2 line-clamp-2">{notif.message}</p>
+                                                <span className="text-[10px] text-slate-400 font-medium flex items-center gap-1">
+                                                    <Clock size={10} />
+                                                    {new Date(notif.createdAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' })}
+                                                </span>
+                                            </div>
+                                            <button 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    dismissNotification(currentUser.id, notif.id);
+                                                }}
+                                                className="p-1.5 text-slate-300 hover:text-red-600 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                        {studentNotifications.length > 0 && (
+                            <Link 
+                                href="/profile" 
+                                onClick={() => setIsNotificationsOpen(false)}
+                                className="block w-full py-3 text-center text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 transition-colors"
+                            >
+                                عرض كل الإشعارات في حسابي
+                            </Link>
+                        )}
+                    </div>
+                )}
+            </div>
+          )}
           {currentUser ? (
             <div className="hidden sm:flex items-center gap-4">
                {currentUser.role === "admin" && (

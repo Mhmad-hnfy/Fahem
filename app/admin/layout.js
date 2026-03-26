@@ -52,6 +52,7 @@ export default function AdminLayout({ children }) {
     { name: "الأكواد", icon: Key, href: "/admin/codes" },
     { name: "الطلاب", icon: Users, href: "/admin/users" },
     { name: "المدرسين", icon: GraduationCap, href: "/admin/teachers" },
+    { name: "الإشعارات", icon: Bell, href: "/admin/notifications" },
   ];
 
   return (

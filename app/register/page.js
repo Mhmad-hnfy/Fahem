@@ -17,6 +17,9 @@ import {
   Gift,
   PlusCircle,
   MessageSquare,
+  CheckCircle2,
+  MessageCircleMore,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -27,6 +30,8 @@ const RegistrationPage = () => {
   const { registerUser, classes, categories } = useGlobalStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [registeredName, setRegisteredName] = useState("");
 
   const [formData, setFormData] = useState({
     // Mandatory
@@ -73,7 +78,9 @@ const RegistrationPage = () => {
 
     const result = await registerUser(submissionData);
     if (result.success) {
-        router.push("/");
+        setRegisteredName(formData.name);
+        setShowSuccess(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         alert(result.message);
     }
@@ -87,6 +94,66 @@ const RegistrationPage = () => {
   const labelClass = "block text-white text-sm font-medium mb-2 mr-2";
   const sectionTitleClass =
     "text-xl font-bold text-white mb-6 border-r-4 border-red-600 pr-3 mt-8";
+
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
+        {/* Background Decorative Elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+          <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-red-600/20 blur-[120px] rounded-full"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-red-900/10 blur-[100px] rounded-full"></div>
+        </div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-lg"
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[3rem] p-8 md:p-12 shadow-2xl text-center">
+            <div className="w-24 h-24 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-500/30">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", damping: 12, delay: 0.2 }}
+              >
+                <CheckCircle2 className="text-red-500 w-12 h-12" />
+              </motion.div>
+            </div>
+
+            <h1 className="text-3xl md:text-4xl font-black text-white mb-4">
+              أهلاً بك يا {registeredName.split(" ")[0]}!
+            </h1>
+            <p className="text-gray-400 text-lg mb-10 leading-relaxed font-medium">
+              تم إنشاء حسابك بنجاح في منصة فاهم التعليمية. خطوة واحدة أخيرة لتأكيد اشتراكك واستلام هديتك الترحيبية.
+            </p>
+
+            <div className="space-y-4">
+              <motion.a
+                whileHover={{ scale: 1.02, backgroundColor: "#15803d" }}
+                whileTap={{ scale: 0.98 }}
+                href={`https://wa.me/201034654360?text=${encodeURIComponent(
+                  `أهلاً منصة فاهم، أنا ${registeredName} سجلت حساب جديد ومتحمس أبدأ!`
+                )}`}
+                target="_blank"
+                className="w-full py-5 bg-green-600 text-white font-bold text-xl rounded-2xl shadow-xl shadow-green-900/20 flex items-center justify-center gap-3 transition-all"
+              >
+                <MessageCircleMore size={24} />
+                تأكيد عبر الواتساب
+              </motion.a>
+
+              <button
+                onClick={() => router.push("/")}
+                className="w-full py-4 text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 font-bold"
+              >
+                الاستمرار للمنصة الرئيسية
+                <ArrowRight size={18} className="rotate-180" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 py-20 relative overflow-hidden">
