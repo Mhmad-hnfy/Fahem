@@ -29,7 +29,7 @@ export default function LessonDetailPage({ params }) {
   const router = useRouter();
   const lessonId = parseInt(unwrappedParams.lessonId, 10);
 
-  const { lessons, chapters, currentUser, unlockedChapters, lessonViews, viewCounts, incrementLessonView, verifyAndUseCode } = useGlobalStore();
+  const { lessons, chapters, currentUser, unlockedChapters, lessonViews, viewCounts, incrementLessonView, verifyAndUseCode, isLoaded } = useGlobalStore();
 
   const lesson = lessons.find(l => l.id === lessonId);
   const chapter = lesson ? chapters.find(c => c.id === parseInt(lesson.chapterId)) : null;
@@ -43,22 +43,25 @@ export default function LessonDetailPage({ params }) {
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef(null);
 
-  // Access Control & View Tracking
-  const isUnlocked = (currentUser && chapter && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id)) || (chapter && Number(chapter.price || 0) === 0);
+  // SECURITY: currentUser is ALWAYS required — even free lessons need a login
+  // "free" only means no code is needed, NOT that anyone can watch without an account
+  const isUnlocked = !!currentUser && !!chapter && (
+    (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id) ||
+    Number(chapter.price || 0) === 0
+  );
   const userView = (viewCounts || []).find(v => v.userId === currentUser?.id && v.lessonId === lessonId);
   const currentViews = userView ? userView.count : 0;
   const maxViews = lesson?.maxViews || 5;
 
-  const handleRedeemCode = (e) => {
+  const handleRedeemCode = async (e) => {
     e.preventDefault();
-    if (!redeemCode) return;
+    if (!redeemCode || !currentUser) return;
     setIsRedeeming(true);
-    const result = verifyAndUseCode(redeemCode, currentUser?.id);
+    const result = await verifyAndUseCode(redeemCode, currentUser.id);
     if (result.success) {
-        alert(result.message);
         setRedeemCode("");
-        // Immediately track the first view of the recharged session
-        incrementLessonView(currentUser?.id, lessonId);
+        // Refresh so isUnlocked re-evaluates → video appears automatically
+        router.refresh();
     } else {
         alert(result.message);
     }
@@ -206,8 +209,48 @@ export default function LessonDetailPage({ params }) {
     setShowControls(prev => !prev);
   };
 
-  if (!lessons || (lessons.length === 0 && !lesson)) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white" dir="rtl">جاري التحميل...</div>;
+  // ── 1. Loading state ─────────────────────────────────────────────────────
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950" dir="rtl">
+        <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // ── 2. Not logged in → show register / login gate ────────────────────────
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6" dir="rtl">
+        <div className="absolute inset-0 overflow-hidden -z-10">
+          <div className="absolute top-[-15%] right-[-10%] w-[50%] h-[50%] bg-red-700/10 blur-[130px] rounded-full" />
+          <div className="absolute bottom-[-15%] left-[-10%] w-[40%] h-[40%] bg-red-900/10 blur-[100px] rounded-full" />
+        </div>
+        <div className="w-full max-w-md text-center">
+          <div className="w-24 h-24 bg-red-600/10 border border-red-500/20 rounded-3xl flex items-center justify-center mx-auto mb-8">
+            <ShieldCheck className="w-12 h-12 text-red-500" />
+          </div>
+          <h1 className="text-3xl font-black text-white mb-3">محتوى حصري</h1>
+          <p className="text-slate-400 font-bold mb-2">هذا الدرس متاح لطلاب منصة فاهم فقط</p>
+          <p className="text-slate-500 text-sm mb-10">يجب تسجيل الدخول أو إنشاء حساب للتمكن من مشاهدة المحاضرات</p>
+          <div className="space-y-4">
+            <Link
+              href="/login"
+              className="flex items-center justify-center gap-3 w-full py-4 bg-red-600 hover:bg-red-700 text-white font-black text-lg rounded-2xl shadow-xl shadow-red-900/30 transition-all"
+            >
+              <Play className="w-5 h-5 fill-current" />
+              سجل دخولك وابدأ التعلم
+            </Link>
+            <Link
+              href="/register"
+              className="flex items-center justify-center gap-3 w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-base rounded-2xl transition-all"
+            >
+              معكش حساب؟ أنشئ حسابك مجاناً الآن
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!lesson || !chapter) {
@@ -221,16 +264,60 @@ export default function LessonDetailPage({ params }) {
     );
   }
 
+  // ── 4. Logged in but chapter is locked (paid) → show code entry ──────────
   if (!isUnlocked) {
     return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-8 text-center" dir="rtl">
-            <div>
-                <ShieldCheck className="w-20 h-20 text-red-500 mx-auto mb-6" />
-                <h1 className="text-3xl font-black mb-4">الدخول مرفوض</h1>
-                <p className="text-slate-400 mb-8 font-bold">يجب تفعيل الباب أولاً لتتمكن من مشاهدة هذا الدرس</p>
-                <button onClick={() => router.back()} className="px-8 py-3 bg-red-600 rounded-2xl font-black">العودة للباب</button>
-            </div>
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-6" dir="rtl">
+        <div className="absolute inset-0 overflow-hidden -z-10">
+          <div className="absolute top-[-15%] right-[-10%] w-[50%] h-[50%] bg-red-700/10 blur-[130px] rounded-full" />
         </div>
+        <div className="w-full max-w-md">
+          <div className="bg-white/5 border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-red-700 to-rose-700 p-8 text-center">
+              <div className="w-16 h-16 bg-white/15 border border-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <ShieldCheck className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-black text-white">هذا الباب مدفوع</h1>
+              <p className="text-red-200 text-sm mt-1 font-bold">
+                {chapter?.name || "الباب"}
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-8">
+              <p className="text-slate-400 text-center font-bold mb-6">
+                أدخل كود التفعيل الخاص بك لفتح هذا الباب والوصول لجميع دروسه
+              </p>
+              <form onSubmit={handleRedeemCode} className="space-y-4">
+                <input
+                  type="text"
+                  placeholder="مثال: A1B2C3D4"
+                  value={redeemCode}
+                  onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
+                  className="w-full bg-white/5 border-2 border-white/10 focus:border-red-500 rounded-2xl py-4 px-6 text-center text-2xl font-mono font-black text-red-400 focus:outline-none transition-all placeholder:text-slate-700 tracking-widest"
+                  required
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={isRedeeming}
+                  className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-black rounded-2xl shadow-lg shadow-red-950/40 transition-all disabled:opacity-50 text-lg"
+                >
+                  {isRedeeming ? "جاري التحقق..." : "فتح الباب وابدأ التعلم ←"}
+                </button>
+              </form>
+
+              <div className="mt-6 pt-6 border-t border-white/5 text-center">
+                <p className="text-slate-600 text-xs font-bold mb-3">مجاني إدخال الكود • بدون اشتراك شهري</p>
+                <button onClick={() => router.back()} className="text-slate-500 hover:text-white text-sm font-bold transition-colors">
+                  ← العودة للخلف
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -328,56 +415,8 @@ export default function LessonDetailPage({ params }) {
     }
   };
 
-  if (!lesson || !chapter) {
-    return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white" dir="rtl">الدرس غير موجود</div>;
-  }
 
-  if (!isUnlocked) {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-8 text-center" dir="rtl">
-            <div>
-                <ShieldCheck className="w-20 h-20 text-red-500 mx-auto mb-6" />
-                <h1 className="text-3xl font-black mb-4">الدخول مرفوض</h1>
-                <p className="text-slate-400 mb-8 font-bold">يجب تفعيل الباب أولاً لتتمكن من مشاهدة هذا الدرس</p>
-                <button onClick={() => router.back()} className="px-8 py-3 bg-red-600 rounded-2xl font-black">العودة للباب</button>
-            </div>
-        </div>
-    );
-  }
 
-  if (currentViews >= maxViews) {
-    return (
-        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white p-8 text-center" dir="rtl">
-            <div className="max-w-md w-full">
-                <div className="w-24 h-24 bg-orange-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-orange-500/20">
-                    <Eye className="w-12 h-12 text-orange-500" />
-                </div>
-                <h1 className="text-3xl font-black mb-4">انتهت عدد المشاهدات</h1>
-                <p className="text-slate-400 mb-8 font-bold">لقد استنفدت الحد الأقصى لمشاهدة هذا الفيديو ({maxViews} مشاهدات). يمكنك إدخال كود جديد لتجديد المشاهدات.</p>
-                
-                <form onSubmit={handleRedeemCode} className="space-y-4 mb-8">
-                    <input 
-                        type="text" 
-                        placeholder="ادخل كود التجديد هنا..." 
-                        value={redeemCode}
-                        onChange={(e) => setRedeemCode(e.target.value.toUpperCase())}
-                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-center text-xl font-mono font-black text-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all placeholder:text-slate-600"
-                        required
-                    />
-                    <button 
-                        type="submit" 
-                        disabled={isRedeeming}
-                        className="w-full py-4 bg-gradient-to-r from-red-600 to-rose-600 rounded-2xl font-black shadow-lg shadow-red-900/20 hover:from-red-700 hover:to-rose-700 transition-all disabled:opacity-50"
-                    >
-                        {isRedeeming ? "جاري التحقق..." : "تفعيل وشحن المشاهدات الآن"}
-                    </button>
-                </form>
-
-                <button onClick={() => router.back()} className="text-slate-500 hover:text-white font-bold transition-colors">العودة للخلف</button>
-            </div>
-        </div>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-[#0f172a] text-white pt-24 lg:pt-32 pb-20" dir="rtl">

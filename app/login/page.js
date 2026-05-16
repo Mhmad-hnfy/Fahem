@@ -22,10 +22,10 @@ const LoginPage = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const result = loginUser(formData.phone, formData.password);
+    const result = await loginUser(formData.phone, formData.password);
     if (result.success) {
       // Check if user is admin
       if (result.user?.role === "admin") {

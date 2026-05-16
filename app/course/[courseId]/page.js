@@ -57,10 +57,10 @@ export default function CoursePage({ params }) {
     setCodeValue("");
   };
 
-  const handleUnlock = (e) => {
+  const handleUnlock = async (e) => {
     e.preventDefault();
     setError("");
-    const result = verifyAndUseCode(codeValue, currentUser.id);
+    const result = await verifyAndUseCode(codeValue, currentUser.id);
     if (result.success) {
         setSuccess(true);
         setTimeout(() => {
@@ -114,7 +114,11 @@ export default function CoursePage({ params }) {
         {/* Chapters Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {chapters.map((chapter) => {
-            const isUnlocked = (currentUser && (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id)) || Number(chapter.price || 0) === 0;
+            // SECURITY: always require login even for free chapters
+            const isUnlocked = !!currentUser && (
+              (unlockedChapters || []).some(u => u.userId === currentUser.id && u.chapterId === chapter.id) ||
+              Number(chapter.price || 0) === 0
+            );
             const chapterLessonsCount = lessons.filter(l => parseInt(l.chapterId) === parseInt(chapter.id)).length;
             
             return (
