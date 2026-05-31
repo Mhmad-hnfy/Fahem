@@ -139,3 +139,12 @@
 .animate-float {
   animation: float 5s ease-in-out infinite;
 }
+
+/* Print & Capture Protection: Completely hide the page structure when trying to Print/PDF */
+@media print {
+  body, html, #__next, .min-h-screen {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Phone, Lock, Eye, EyeOff, LogIn, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
@@ -9,13 +9,23 @@ import { useGlobalStore } from "@/lib/store";
 
 const LoginPage = () => {
   const router = useRouter();
-  const { loginUser } = useGlobalStore();
+  const { loginUser, currentUser } = useGlobalStore();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     phone: "",
     password: "",
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    }
+  }, [currentUser, router]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

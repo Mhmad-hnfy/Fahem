@@ -64,23 +64,23 @@ export default function CategoryPage({ params }) {
         </div>
 
         {/* Classes Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-5xl mx-auto">
           {categoryClasses.map((cls) => (
             <Link
               href={`/class/${cls.id}`}
               key={cls.id}
-              className="group bg-white rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500"
+              className="group bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500"
             >
-              <div className="w-20 h-20 mb-6 bg-red-50 text-red-600 rounded-[20px] flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
-                <BookOpen className="w-10 h-10" />
+              <div className="w-12 h-12 sm:w-20 sm:h-20 mb-3 sm:mb-6 bg-red-50 text-red-600 rounded-[14px] sm:rounded-[20px] flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
+                <BookOpen className="w-6 h-6 sm:w-10 sm:h-10" />
               </div>
-              <h3 className="text-2xl font-black text-slate-900 group-hover:text-red-600 transition-colors">
+              <h3 className="text-base sm:text-2xl font-black text-slate-900 group-hover:text-red-600 transition-colors line-clamp-1">
                 {cls.name}
               </h3>
-              <div className="mt-4 text-sm font-bold text-slate-500">
-                <span>{getCoursesCount(cls.id)} مادة دراسية متاحة</span>
+              <div className="mt-2 sm:mt-4 text-[10px] sm:text-sm font-bold text-slate-500">
+                <span>{getCoursesCount(cls.id)} مادة</span>
               </div>
-              <span className="mt-6 px-6 py-2.5 rounded-xl bg-slate-50 text-slate-600 font-bold group-hover:bg-slate-900 group-hover:text-white transition-colors duration-500 text-sm w-full">
+              <span className="mt-4 sm:mt-6 px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl bg-slate-50 text-slate-600 font-bold group-hover:bg-slate-900 group-hover:text-white transition-colors duration-500 text-[10px] sm:text-sm w-full">
                 تصفح المواد
               </span>
             </Link>

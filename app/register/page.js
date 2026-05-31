@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   User,
@@ -22,12 +22,22 @@ import { useGlobalStore } from "@/lib/store";
 
 const RegistrationPage = () => {
   const router = useRouter();
-  const { registerUser, classes, categories } = useGlobalStore();
+  const { registerUser, classes, categories, currentUser } = useGlobalStore();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [registeredName, setRegisteredName] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
+    }
+  }, [currentUser, router]);
 
   const [formData, setFormData] = useState({
     name: "",

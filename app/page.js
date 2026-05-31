@@ -10,10 +10,11 @@ export default function Home() {
     <>
       <Hero />
       <NotificationsDisplay />
-      <LearningJourney />
       <Courses />
       <Team />
+      <LearningJourney />
       <Footer />
     </>
+  
   );
 }

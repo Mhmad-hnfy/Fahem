@@ -24,24 +24,24 @@ export default function Courses() {
           <div className="w-16 sm:w-24 h-1 sm:h-1.5 bg-red-600 mx-auto mt-4 sm:mt-6 rounded-full" />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-3 sm:gap-8 max-w-5xl mx-auto">
           {categories.map((cat, index) => (
             <Link
               href={`/category/${cat.id}`}
               key={cat.id || index}
-              className="group bg-white text-slate-800 rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-xl border border-red-50 hover:shadow-red-500/20 hover:-translate-y-2 transition-all duration-500"
+              className="w-[calc(50%-0.375rem)] sm:w-[320px] group bg-white text-slate-800 rounded-2xl sm:rounded-[32px] p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-xl border border-red-50 hover:shadow-red-500/20 hover:-translate-y-2 transition-all duration-500"
             >
-              <div className="w-20 h-20 mb-6 bg-red-50 text-red-600 rounded-[20px] flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
-                <BookOpen className="w-10 h-10" />
+              <div className="w-12 h-12 sm:w-20 sm:h-20 mb-3 sm:mb-6 bg-red-50 text-red-600 rounded-[14px] sm:rounded-[20px] flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
+                <BookOpen className="w-6 h-6 sm:w-10 sm:h-10" />
               </div>
-              <h3 className="text-2xl font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors">
+              <h3 className="text-base sm:text-2xl font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors">
                 {cat.name}
               </h3>
-              <div className="flex gap-4 mt-4 text-sm font-bold text-slate-500">
-                <span>{getClassesCount(cat.id)} صفوف دراسية</span>
+              <div className="flex gap-2 sm:gap-4 mt-2 sm:mt-4 text-[10px] sm:text-sm font-bold text-slate-500">
+                <span>{getClassesCount(cat.id)} صفوف</span>
               </div>
-              <span className="mt-6 px-6 py-2.5 rounded-xl bg-red-50 text-red-600 font-bold group-hover:bg-red-600 group-hover:text-white transition-colors duration-500 text-sm">
-                الدخول للمرحلة &larr;
+              <span className="mt-4 sm:mt-6 px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-50 text-red-600 font-bold group-hover:bg-red-600 group-hover:text-white transition-colors duration-500 text-[10px] sm:text-sm">
+                دخول &larr;
               </span>
             </Link>
           ))}

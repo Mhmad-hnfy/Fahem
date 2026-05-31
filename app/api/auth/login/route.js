@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
+import { signCookieValue } from "@/lib/auth";
 
 // Server-side Supabase client — password field is ONLY read here, never sent to client
 const supabase = createClient(
@@ -80,9 +81,13 @@ export async function POST(request) {
     const { password: _pwd, ...safeUser } = user;
     const camelUser = toCamel(safeUser);
 
+    // Sign the role value for security
+    const roleValue = camelUser.role || "student";
+    const signedRole = await signCookieValue(roleValue);
+
     // Set a session cookie for middleware route protection
     const response = NextResponse.json({ success: true, user: camelUser });
-    response.cookies.set("fahem_role", camelUser.role || "student", {
+    response.cookies.set("fahem_role", signedRole, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

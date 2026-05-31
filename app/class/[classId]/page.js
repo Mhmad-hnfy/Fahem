@@ -74,48 +74,48 @@ export default function ClassPage({ params }) {
         </div>
 
         {/* Courses Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-6xl mx-auto">
           {classCourses.map((course) => {
             const teacher = getTeacher(course.teacherId);
 
             return (
               <div
                 key={course.id}
-                className="group bg-white rounded-[32px] p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500 relative overflow-hidden"
+                className="group bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500 relative overflow-hidden"
               >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 transition-transform group-hover:scale-110 duration-500"></div>
+                <div className="absolute top-0 right-0 w-16 h-16 sm:w-32 sm:h-32 bg-red-50 rounded-full -mr-8 -mt-8 sm:-mr-16 sm:-mt-16 transition-transform group-hover:scale-110 duration-500"></div>
 
-                <div className="w-20 h-20 mb-6 bg-red-100 text-red-600 rounded-[20px] flex items-center justify-center z-10 overflow-hidden relative shadow-sm">
+                <div className="w-12 h-12 sm:w-20 sm:h-20 mb-3 sm:mb-6 bg-red-100 text-red-600 rounded-[14px] sm:rounded-[20px] flex items-center justify-center z-10 overflow-hidden relative shadow-sm">
                   {course.image ? (
                     <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
                   ) : (
-                    <BookOpen className="w-10 h-10" />
+                    <BookOpen className="w-6 h-6 sm:w-10 sm:h-10" />
                   )}
                 </div>
 
-                <h3 className="text-2xl font-black text-slate-900 mb-2 z-10 relative">
+                <h3 className="text-base sm:text-2xl font-black text-slate-900 mb-1 sm:mb-2 z-10 relative line-clamp-1">
                   {course.name}
                 </h3>
 
                 {teacher && (
                   <Link
                     href={`/teachers/${teacher.id}`}
-                    className="inline-flex items-center gap-2 mt-4 text-sm font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-full transition-all z-10"
+                    className="inline-flex items-center gap-1 sm:gap-2 mt-1 sm:mt-4 text-[10px] sm:text-sm font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 sm:px-4 sm:py-2 rounded-full transition-all z-10"
                   >
                     <img
                       src={teacher.image}
                       alt={teacher.name}
-                      className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                      className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover border border-slate-200"
                     />
-                    <span>{teacher.name}</span>
+                    <span className="line-clamp-1">{teacher.name}</span>
                   </Link>
                 )}
 
                 <Link
                   href={`/course/${course.id}`}
-                  className="mt-6 sm:mt-8 px-8 py-3 w-full rounded-2xl bg-red-600 text-white font-bold shadow-md hover:bg-red-700 shadow-red-200 transition-all duration-300 text-sm flex items-center justify-center gap-2 z-10"
+                  className="mt-4 sm:mt-8 px-3 py-2 w-full rounded-xl sm:rounded-2xl bg-red-600 text-white font-bold shadow-md hover:bg-red-700 shadow-red-200 transition-all duration-300 text-[10px] sm:text-sm flex items-center justify-center gap-1.5 z-10"
                 >
-                  <Video className="w-4 h-4" />
+                  <Video className="w-3.5 h-3.5" />
                   تفاصيل الكورس
                 </Link>
               </div>

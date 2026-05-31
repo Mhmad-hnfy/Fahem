@@ -41,6 +41,7 @@ export default function LessonDetailPage({ params }) {
   const [redeemCode, setRedeemCode] = useState("");
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [showControls, setShowControls] = useState(true);
+  const [devToolsOpen, setDevToolsOpen] = useState(false);
   const controlsTimeoutRef = useRef(null);
 
   // SECURITY: currentUser is ALWAYS required — even free lessons need a login
@@ -204,6 +205,80 @@ export default function LessonDetailPage({ params }) {
       if (controlsTimeoutRef.current) clearTimeout(controlsTimeoutRef.current);
     };
   }, [isPlaying, showControls]);
+
+  // Anti-Theft Security: Prevent copy, right-click, and Inspect Element, and detect DevTools
+  useEffect(() => {
+    if (!isUnlocked) return;
+
+    const preventRightClick = (e) => {
+      e.preventDefault();
+    };
+
+    const preventCopy = (e) => {
+      e.preventDefault();
+    };
+
+    const preventInspect = (e) => {
+      // Disable F12 (Inspect), Ctrl+Shift+I (DevTools), Ctrl+Shift+C (Inspect), Ctrl+Shift+J (Console), Ctrl+U (Source), Ctrl+S (Save)
+      if (
+        e.keyCode === 123 || 
+        (e.ctrlKey && e.shiftKey && (e.keyCode === 73 || e.keyCode === 67 || e.keyCode === 74)) || 
+        (e.ctrlKey && e.keyCode === 85) || 
+        (e.ctrlKey && e.keyCode === 83)
+      ) {
+        e.preventDefault();
+        return false;
+      }
+    };
+
+    document.addEventListener("contextmenu", preventRightClick);
+    document.addEventListener("keydown", preventInspect);
+    document.addEventListener("copy", preventCopy);
+    document.addEventListener("selectstart", preventCopy);
+
+    // DevTools Detection
+    let isDevToolsOpen = false;
+    const threshold = 160;
+    
+    const checkDevTools = () => {
+      const widthThreshold = window.outerWidth - window.innerWidth > threshold;
+      const heightThreshold = window.outerHeight - window.innerHeight > threshold;
+      const orientation = widthThreshold ? 'vertical' : 'horizontal';
+
+      if (
+        (heightThreshold && orientation === 'horizontal') ||
+        (widthThreshold && orientation === 'vertical')
+      ) {
+        if (!isDevToolsOpen) {
+          isDevToolsOpen = true;
+          setDevToolsOpen(true);
+          if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+            playerRef.current.pauseVideo();
+          }
+        }
+      } else {
+        if (isDevToolsOpen) {
+          isDevToolsOpen = false;
+          setDevToolsOpen(false);
+        }
+      }
+    };
+
+    // Run check regularly
+    const interval = setInterval(checkDevTools, 1000);
+
+    // Also listen to window resize
+    window.addEventListener("resize", checkDevTools);
+    
+    return () => {
+      document.removeEventListener("contextmenu", preventRightClick);
+      document.removeEventListener("keydown", preventInspect);
+      document.removeEventListener("copy", preventCopy);
+      document.removeEventListener("selectstart", preventCopy);
+      clearInterval(interval);
+      window.removeEventListener("resize", checkDevTools);
+    };
+  }, [isUnlocked]);
 
   const handleTouchPlayer = () => {
     setShowControls(prev => !prev);
@@ -419,7 +494,7 @@ export default function LessonDetailPage({ params }) {
 
 
   return (
-    <main className="min-h-screen bg-[#0f172a] text-white pt-24 lg:pt-32 pb-20" dir="rtl">
+    <main className="min-h-screen bg-[#0f172a] text-white pt-24 lg:pt-32 pb-20 select-none" dir="rtl">
       <div className="max-w-7xl mx-auto px-4 lg:grid lg:grid-cols-3 gap-8">
         
         {/* Left: Video Player & PDF (Col-Span 2) */}
@@ -453,7 +528,18 @@ export default function LessonDetailPage({ params }) {
               </div>
 
               {/* Custom Controls Overlay */}
-              <div className="absolute inset-0 bg-transparent z-[40]" onContextMenu={(e) => e.preventDefault()} onClick={handleTouchPlayer}>
+               {/* DevTools Warning Overlay */}
+               {devToolsOpen && (
+                 <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-md z-[100] flex flex-col items-center justify-center text-center p-6 select-none" onContextMenu={(e) => e.preventDefault()}>
+                   <ShieldCheck className="w-12 h-12 md:w-16 md:h-16 text-red-500 animate-pulse mb-4" />
+                   <h3 className="text-lg md:text-2xl font-black text-white mb-2">تم رصد أدوات المطور (DevTools)</h3>
+                   <p className="text-slate-400 text-xs md:text-sm font-bold max-w-sm">
+                     يرجى إغلاق أدوات المطور للمتابعة. حماية المحتوى مفعلة لحفظ حقوق الملكية الفكرية.
+                   </p>
+                 </div>
+               )}
+
+               <div className="absolute inset-0 bg-transparent z-[40]" onContextMenu={(e) => e.preventDefault()} onClick={handleTouchPlayer}>
                  {/* Protection Layer covers the center to prevent direct iframe clicks, but controls are accessible */}
                  <div className="absolute inset-0 bg-transparent"></div>
 

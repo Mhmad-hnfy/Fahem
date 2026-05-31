@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useGlobalStore } from "@/lib/store";
 import { 
   Plus, 
@@ -10,7 +10,22 @@ import {
   FileText, 
   ExternalLink,
   Search,
-  Image as LucideImage
+  Image as LucideImage,
+  FolderTree,
+  Grid,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  Layers,
+  BookOpen,
+  RotateCcw,
+  HelpCircle,
+  Eye,
+  Filter,
+  CheckCircle2,
+  XCircle,
+  Sparkles,
+  ArrowLeftRight
 } from "lucide-react";
 import ImageUpload from "@/Components/ImageUpload";
 
@@ -18,6 +33,7 @@ export default function LessonsManagement() {
   const { 
     categories, 
     classes, 
+    courses,
     chapters, 
     lessons, 
     addLesson, 
@@ -28,10 +44,25 @@ export default function LessonsManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Page-level filters
+  const [filterCategory, setFilterCategory] = useState("");
+  const [filterClass, setFilterClass] = useState("");
+  const [filterCourse, setFilterCourse] = useState("");
+  const [filterChapter, setFilterChapter] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+
+  // View Mode: 'grouped' (organized tree collapsible) or 'grid' (flat cards)
+  const [viewMode, setViewMode] = useState("grouped");
+  
+  // Accordion state for expanded chapters
+  const [expandedChapters, setExpandedChapters] = useState({});
+
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
     classId: "",
+    courseId: "", // UI helper
     chapterId: "",
     youtubeLink: "",
     banner: "",
@@ -40,20 +71,184 @@ export default function LessonsManagement() {
     maxViews: 5
   });
 
-  const filteredClasses = classes.filter(c => c.categoryId === parseInt(formData.categoryId));
-  // Same logic as codes for chapters
-  const filteredChapters = chapters.filter(ch => true);
+  // Dynamic filter lists for top filter bar
+  const filterClassesList = useMemo(() => {
+    return classes.filter(c => !filterCategory || c.categoryId === parseInt(filterCategory));
+  }, [classes, filterCategory]);
+
+  const filterCoursesList = useMemo(() => {
+    return courses.filter(c => !filterClass || c.classId === parseInt(filterClass));
+  }, [courses, filterClass]);
+
+  const filterChaptersList = useMemo(() => {
+    return chapters.filter(ch => !filterCourse || ch.courseId === parseInt(filterCourse));
+  }, [chapters, filterCourse]);
+
+  // Modal Dynamic lists
+  const modalClassesList = useMemo(() => {
+    return classes.filter(c => c.categoryId === parseInt(formData.categoryId));
+  }, [classes, formData.categoryId]);
+
+  const modalCoursesList = useMemo(() => {
+    return courses.filter(c => c.classId === parseInt(formData.classId));
+  }, [courses, formData.classId]);
+
+  const modalChaptersList = useMemo(() => {
+    return chapters.filter(ch => ch.courseId === parseInt(formData.courseId));
+  }, [chapters, formData.courseId]);
+
+  // Handlers for modal field changes to reset subordinate selections
+  const handleModalCategoryChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      categoryId: e.target.value,
+      classId: "",
+      courseId: "",
+      chapterId: ""
+    }));
+  };
+
+  const handleModalClassChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      classId: e.target.value,
+      courseId: "",
+      chapterId: ""
+    }));
+  };
+
+  const handleModalCourseChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      courseId: e.target.value,
+      chapterId: ""
+    }));
+  };
+
+  // Master filter logic
+  const displayedLessons = useMemo(() => {
+    return lessons.filter((l) => {
+      const matchesSearch = l.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = !filterCategory || l.categoryId === parseInt(filterCategory);
+      const matchesClass = !filterClass || l.classId === parseInt(filterClass);
+      const matchesStatus = !filterStatus || l.status === filterStatus;
+      
+      let matchesChapter = !filterChapter || l.chapterId === parseInt(filterChapter);
+      
+      // If course is filtered but chapter is not, match by course
+      if (filterCourse && !filterChapter) {
+        const chap = chapters.find(ch => ch.id === parseInt(l.chapterId));
+        matchesChapter = chap?.courseId === parseInt(filterCourse);
+      }
+      
+      return matchesSearch && matchesCategory && matchesClass && matchesChapter && matchesStatus;
+    });
+  }, [lessons, searchQuery, filterCategory, filterClass, filterCourse, filterChapter, filterStatus, chapters]);
+
+  // Hierarchical grouped data for 'grouped' tree view
+  const groupedData = useMemo(() => {
+    const result = [];
+    
+    categories.forEach(cat => {
+      const catClasses = [];
+      
+      classes.filter(cls => cls.categoryId === cat.id).forEach(cls => {
+        const clsCourses = [];
+        
+        courses.filter(course => course.classId === cls.id).forEach(course => {
+          const courseChapters = [];
+          
+          chapters.filter(ch => ch.courseId === course.id).forEach(ch => {
+            const chLessons = displayedLessons.filter(l => l.chapterId === ch.id);
+            if (chLessons.length > 0) {
+              courseChapters.push({
+                ...ch,
+                lessons: chLessons
+              });
+            }
+          });
+          
+          if (courseChapters.length > 0) {
+            clsCourses.push({
+              ...course,
+              chapters: courseChapters
+            });
+          }
+        });
+        
+        if (clsCourses.length > 0) {
+          catClasses.push({
+            ...cls,
+            courses: clsCourses
+          });
+        }
+      });
+      
+      if (catClasses.length > 0) {
+        result.push({
+          ...cat,
+          classes: catClasses
+        });
+      }
+    });
+    
+    return result;
+  }, [displayedLessons, categories, classes, courses, chapters]);
+
+  // Lessons that don't belong to a valid Category/Class/Course/Chapter
+  const unassignedLessons = useMemo(() => {
+    return displayedLessons.filter(l => {
+      const chapter = chapters.find(ch => ch.id === parseInt(l.chapterId));
+      const course = courses.find(co => co.id === chapter?.courseId);
+      const cls = classes.find(cl => cl.id === l.classId || cl.id === course?.classId);
+      const cat = categories.find(ct => ct.id === l.categoryId || ct.id === cls?.categoryId);
+      return !chapter || !course || !cls || !cat;
+    });
+  }, [displayedLessons, categories, classes, courses, chapters]);
+
+  const toggleChapter = (id) => {
+    setExpandedChapters(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const expandAll = () => {
+    const newExpanded = {};
+    groupedData.forEach(cat => {
+      cat.classes.forEach(cls => {
+        cls.courses.forEach(course => {
+          course.chapters.forEach(ch => {
+            newExpanded[ch.id] = true;
+          });
+        });
+      });
+    });
+    setExpandedChapters(newExpanded);
+  };
+
+  const collapseAll = () => {
+    setExpandedChapters({});
+  };
+
+  const clearAllFilters = () => {
+    setSearchQuery("");
+    setFilterCategory("");
+    setFilterClass("");
+    setFilterCourse("");
+    setFilterChapter("");
+    setFilterStatus("");
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Ensure all linked IDs are stored as integers for correct filtering on student side
     const submissionData = {
         ...formData,
         categoryId: parseInt(formData.categoryId),
         classId: parseInt(formData.classId),
         chapterId: parseInt(formData.chapterId)
     };
+
+    // Clean up temporary UI field
+    delete submissionData.courseId;
 
     if (editingLesson) {
       updateLesson(editingLesson.id, submissionData);
@@ -69,6 +264,7 @@ export default function LessonsManagement() {
       name: "",
       categoryId: "",
       classId: "",
+      courseId: "",
       chapterId: "",
       youtubeLink: "",
       banner: "",
@@ -80,8 +276,23 @@ export default function LessonsManagement() {
   };
 
   const handleEdit = (lesson) => {
+    const chapter = chapters.find(c => c.id === parseInt(lesson.chapterId));
+    const course = courses.find(co => co.id === chapter?.courseId);
+    const cls = classes.find(cl => cl.id === lesson.classId || cl.id === course?.classId);
+    
     setEditingLesson(lesson);
-    setFormData({ ...lesson });
+    setFormData({
+      name: lesson.name || "",
+      categoryId: lesson.categoryId?.toString() || cls?.categoryId?.toString() || "",
+      classId: lesson.classId?.toString() || cls?.id?.toString() || "",
+      courseId: course?.id?.toString() || "",
+      chapterId: lesson.chapterId?.toString() || "",
+      youtubeLink: lesson.youtubeLink || "",
+      banner: lesson.banner || "",
+      pdfFile: lesson.pdfFile || "",
+      status: lesson.status || "نشط",
+      maxViews: lesson.maxViews || 5
+    });
     setIsModalOpen(true);
   };
 
@@ -96,190 +307,768 @@ export default function LessonsManagement() {
       }
   };
 
-  const displayedLessons = lessons.filter(l => 
-    l.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Helper selectors for names
+  const getCategoryName = (id) => categories.find(c => c.id === id)?.name || "بدون مرحلة";
+  const getClassName = (id) => classes.find(c => c.id === id)?.name || "بدون صف";
+  const getChapterName = (id) => chapters.find(c => c.id === id)?.name || "بدون باب";
+  const getCourseNameByChapter = (chapterId) => {
+    const ch = chapters.find(c => c.id === chapterId);
+    const co = courses.find(c => c.id === ch?.courseId);
+    return co?.name || "بدون مادة";
+  };
 
   return (
     <div className="space-y-8" dir="rtl">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
+      {/* Title Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gradient-to-l from-slate-900 via-slate-850 to-slate-950 p-8 rounded-[36px] text-white shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-red-600/10 rounded-full blur-[80px] -z-10"></div>
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-rose-600/5 rounded-full blur-[100px] -z-10"></div>
         <div>
-          <h1 className="text-3xl font-black text-slate-800">إدارة الدروس</h1>
-          <p className="text-slate-500 font-medium">إضافة وتعديل فيديوهات الدروس والملفات المرفقة</p>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="px-3 py-1 bg-red-500/20 text-red-400 border border-red-500/30 text-xs font-black rounded-full flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5" />
+              منظم بالكامل
+            </span>
+          </div>
+          <h1 className="text-3xl lg:text-4xl font-black tracking-tight">إدارة وتنظيم الدروس</h1>
+          <p className="text-slate-400 mt-2 font-medium">نظم دروسك، فيديوهاتك، وملفات الـ PDF داخل المراحل، الصفوف، المواد والأبواب الدراسية بسهولة تامة.</p>
         </div>
         <button
           onClick={() => { resetForm(); setIsModalOpen(true); }}
-          className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-2xl font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-200"
+          className="flex items-center justify-center gap-2.5 px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-2xl font-black hover:from-red-700 hover:to-rose-700 transition-all shadow-lg shadow-red-950/40 border border-red-500/20 active:scale-95 shrink-0"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-5.5 h-5.5 stroke-[3px]" />
           إضافة درس جديد
         </button>
       </div>
 
-      <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 p-6">
-        <div className="relative max-w-md mb-6">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-          <input
-            type="text"
-            placeholder="البحث عن درس..."
-            className="w-full pr-12 pl-4 py-3 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-red-500 focus:bg-white focus:outline-none font-bold transition-all"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+      {/* Filter and Search Panel */}
+      <div className="bg-white rounded-[32px] shadow-sm border border-slate-150 p-6 space-y-6">
+        <div className="flex flex-col xl:flex-row xl:items-center gap-4 justify-between">
+          {/* Main Search Input */}
+          <div className="relative flex-1 max-w-xl">
+            <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input
+              type="text"
+              placeholder="البحث عن درس بالاسم..."
+              className="w-full pr-12 pl-4 py-3.5 rounded-2xl bg-slate-50 border-2 border-transparent focus:border-red-500 focus:bg-white focus:outline-none font-bold transition-all text-slate-700 placeholder-slate-400"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+
+          {/* Controls: View Mode & Collapsibles */}
+          <div className="flex flex-wrap items-center gap-3">
+            {viewMode === "grouped" && groupedData.length > 0 && (
+              <div className="flex items-center gap-2 border-l border-slate-100 pl-3">
+                <button
+                  onClick={expandAll}
+                  className="px-3.5 py-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 font-black text-xs transition-colors"
+                >
+                  توسيع الكل
+                </button>
+                <button
+                  onClick={collapseAll}
+                  className="px-3.5 py-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 font-black text-xs transition-colors"
+                >
+                  طي الكل
+                </button>
+              </div>
+            )}
+
+            <div className="bg-slate-100 p-1.5 rounded-2xl flex items-center gap-1">
+              <button
+                onClick={() => setViewMode("grouped")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-all ${viewMode === "grouped" ? "bg-white text-red-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+              >
+                <FolderTree className="w-4 h-4" />
+                شجرة التصنيفات
+              </button>
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-black text-sm transition-all ${viewMode === "grid" ? "bg-white text-red-600 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}
+              >
+                <Grid className="w-4 h-4" />
+                شبكة الدروس
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {displayedLessons.map((lesson) => {
-            const chapter = chapters.find(c => c.id === parseInt(lesson.chapterId));
-            return (
-              <div key={lesson.id} className="group bg-slate-50 rounded-[32px] overflow-hidden border border-slate-100 hover:shadow-xl transition-all duration-500">
-                <div className="relative h-48 overflow-hidden bg-slate-200">
-                  {lesson.banner ? (
-                    <img src={lesson.banner} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt={lesson.name} />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      <LucideImage className="w-12 h-12" />
-                    </div>
-                  )}
-                  <div className="absolute top-4 right-4 bg-red-600 text-white p-2 rounded-xl shadow-lg">
-                    <Youtube className="w-5 h-5" />
-                  </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-black text-slate-800 mb-2 truncate">{lesson.name}</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <p className="text-sm font-bold text-slate-500">{chapter?.name || "بدون باب"}</p>
-                    <span className="text-xs font-black bg-slate-200 px-2 py-1 rounded-lg">الحد: {lesson.maxViews || 5}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-3 pt-4 border-t border-slate-200">
-                    <button 
-                      onClick={() => handleEdit(lesson)}
-                      className="p-2 bg-white text-slate-600 rounded-xl hover:text-red-600 hover:shadow-md transition-all border border-slate-100"
-                    >
-                      <Edit className="w-5 h-5" />
-                    </button>
-                    <button 
-                      onClick={() => deleteLesson(lesson.id)}
-                      className="p-2 bg-white text-slate-600 rounded-xl hover:text-red-600 hover:shadow-md transition-all border border-slate-100"
-                    >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                    <div className="mr-auto flex items-center gap-2">
-                        {lesson.pdfFile && <FileText className="w-5 h-5 text-blue-500" title="يحتوي على PDF" />}
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${lesson.status === "نشط" ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-400"}`}>
-                            {lesson.status}
-                        </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        {/* Filter Dropdowns Grid */}
+        <div className="bg-slate-50/50 p-5 rounded-2xl border border-slate-100">
+          <div className="flex items-center gap-2 text-slate-700 font-black text-sm mb-4">
+            <SlidersHorizontal className="w-4.5 h-4.5 text-red-500" />
+            <span>فلاتر تصفية ذكية</span>
+            {(filterCategory || filterClass || filterCourse || filterChapter || filterStatus || searchQuery) && (
+              <button
+                onClick={clearAllFilters}
+                className="mr-auto text-xs text-red-600 hover:text-red-700 font-black flex items-center gap-1 bg-red-50 hover:bg-red-100/70 px-3 py-1.5 rounded-lg transition-all"
+              >
+                <RotateCcw className="w-3 h-3" />
+                إعادة ضبط
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Category Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 pr-1">المرحلة الدراسية</label>
+              <select
+                className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:border-red-500 focus:outline-none transition-all cursor-pointer text-slate-700"
+                value={filterCategory}
+                onChange={(e) => {
+                  setFilterCategory(e.target.value);
+                  setFilterClass("");
+                  setFilterCourse("");
+                  setFilterChapter("");
+                }}
+              >
+                <option value="">كل المراحل</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            {/* Class Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 pr-1">الصف الدراسي</label>
+              <select
+                className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:border-red-500 focus:outline-none transition-all cursor-pointer text-slate-700"
+                value={filterClass}
+                onChange={(e) => {
+                  setFilterClass(e.target.value);
+                  setFilterCourse("");
+                  setFilterChapter("");
+                }}
+              >
+                <option value="">كل الصفوف</option>
+                {filterClassesList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            {/* Course Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 pr-1">المادة الدراسية</label>
+              <select
+                className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:border-red-500 focus:outline-none transition-all cursor-pointer text-slate-700"
+                value={filterCourse}
+                onChange={(e) => {
+                  setFilterCourse(e.target.value);
+                  setFilterChapter("");
+                }}
+              >
+                <option value="">كل المواد</option>
+                {filterCoursesList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+
+            {/* Chapter Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 pr-1">الباب / الفصل</label>
+              <select
+                className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:border-red-500 focus:outline-none transition-all cursor-pointer text-slate-700"
+                value={filterChapter}
+                onChange={(e) => setFilterChapter(e.target.value)}
+              >
+                <option value="">كل الأبواب</option>
+                {filterChaptersList.map(ch => <option key={ch.id} value={ch.id}>{ch.name}</option>)}
+              </select>
+            </div>
+
+            {/* Status Select */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-black text-slate-500 pr-1">حالة الدرس</label>
+              <select
+                className="w-full px-3.5 py-3 rounded-xl border border-slate-200 bg-white font-bold text-sm focus:border-red-500 focus:outline-none transition-all cursor-pointer text-slate-700"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="">كل الحالات</option>
+                <option value="نشط">نشط</option>
+                <option value="غير نشط">غير نشط</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Lesson Modal */}
+      {/* Main Results View */}
+      {viewMode === "grouped" ? (
+        // Hierarchical Collapsible View
+        <div className="space-y-8">
+          {groupedData.length === 0 && unassignedLessons.length === 0 ? (
+            <div className="bg-white rounded-[32px] p-16 text-center border border-slate-150 shadow-sm">
+              <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-100">
+                <Search className="w-10 h-10" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800 mb-2">لا توجد نتائج مطابقة للتصفية</h3>
+              <p className="text-slate-400 font-bold max-w-md mx-auto mb-6 text-sm leading-relaxed">
+                لم نجد أي دروس مطابقة لمعايير البحث الحالية. يرجى تعديل خيارات التصفية أو الضغط على زر إعادة الضبط.
+              </p>
+              <button
+                onClick={clearAllFilters}
+                className="px-6 py-3 bg-red-600 text-white font-black rounded-xl hover:bg-red-700 transition-all text-sm shadow-md"
+              >
+                إعادة ضبط كل فلاتر التصفية
+              </button>
+            </div>
+          ) : (
+            <>
+              {groupedData.map((category) => (
+                <div key={category.id} className="bg-white rounded-[32px] border border-slate-150 shadow-sm overflow-hidden p-6 lg:p-8 space-y-6">
+                  {/* Category Level */}
+                  <div className="border-b border-slate-100 pb-4 flex items-center gap-3">
+                    <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center font-black text-lg shadow-sm border border-red-100">
+                      {category.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-800">{category.name}</h2>
+                      <p className="text-slate-400 text-xs font-bold mt-0.5">تحتوي هذه المرحلة على الصفوف والدروس المصنفة أدناه.</p>
+                    </div>
+                  </div>
+
+                  {/* Classes Level */}
+                  <div className="space-y-6 pr-0 lg:pr-4">
+                    {category.classes.map((cls) => (
+                      <div key={cls.id} className="bg-slate-50/40 rounded-3xl p-5 border border-slate-100 space-y-5">
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100/70 pb-3">
+                          <h3 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 bg-red-500 rounded-full"></span>
+                            {cls.name}
+                          </h3>
+                          <span className="text-[11px] font-black bg-red-50 text-red-600 px-3 py-1 rounded-full border border-red-100">
+                            {category.name}
+                          </span>
+                        </div>
+
+                        {/* Courses Level */}
+                        <div className="space-y-5">
+                          {cls.courses.map((course) => (
+                            <div key={course.id} className="bg-white rounded-2xl p-4 border border-slate-150 space-y-4 shadow-xs">
+                              <div className="flex flex-wrap items-center justify-between gap-3 pb-2">
+                                <h4 className="text-md font-black text-slate-700 flex items-center gap-2">
+                                  <BookOpen className="w-4.5 h-4.5 text-slate-400" />
+                                  <span>{course.name}</span>
+                                </h4>
+                                <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2.5 py-1 rounded-lg">
+                                  {cls.name}
+                                </span>
+                              </div>
+
+                              {/* Chapters Accordion Level */}
+                              <div className="space-y-3">
+                                {course.chapters.map((ch) => {
+                                  const isExpanded = !!expandedChapters[ch.id];
+                                  return (
+                                    <div key={ch.id} className="border border-slate-100 rounded-2xl overflow-hidden shadow-xs hover:border-slate-200 transition-colors">
+                                      {/* Accordion Header */}
+                                      <div
+                                        onClick={() => toggleChapter(ch.id)}
+                                        className={`flex items-center justify-between p-4 cursor-pointer select-none transition-colors ${isExpanded ? "bg-slate-50/80 border-b border-slate-100" : "bg-white hover:bg-slate-50/50"}`}
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <div className={`p-2 rounded-xl transition-colors ${isExpanded ? "bg-red-500 text-white" : "bg-slate-100 text-slate-500"}`}>
+                                            <Layers className="w-4 h-4" />
+                                          </div>
+                                          <div>
+                                            <span className="font-black text-sm text-slate-800 block">{ch.name}</span>
+                                            <span className="text-[10px] font-bold text-slate-400">{ch.lessons.length} دروس حالياً</span>
+                                          </div>
+                                        </div>
+                                        {isExpanded ? <ChevronUp className="w-5 h-5 text-slate-500" /> : <ChevronDown className="w-5 h-5 text-slate-500" />}
+                                      </div>
+
+                                      {/* Accordion Content */}
+                                      {isExpanded && (
+                                        <div className="p-4 bg-white overflow-x-auto">
+                                          <table className="w-full text-right border-collapse min-w-[700px]">
+                                            <thead>
+                                              <tr className="border-b border-slate-100 text-slate-400 text-[11px] font-black uppercase">
+                                                <th className="pb-3 px-4 text-slate-500">اسم الدرس</th>
+                                                <th className="pb-3 px-4 text-slate-500">رابط الفيديو</th>
+                                                <th className="pb-3 px-4 text-slate-500">الملف المرفق</th>
+                                                <th className="pb-3 px-4 text-slate-500">المشاهدات / الحد</th>
+                                                <th className="pb-3 px-4 text-slate-500">الحالة</th>
+                                                <th className="pb-3 px-4 text-center text-slate-500">التحكم</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-50">
+                                              {ch.lessons.map((lesson) => (
+                                                <tr key={lesson.id} className="hover:bg-slate-50/50 transition-colors group">
+                                                  {/* Name */}
+                                                  <td className="py-3.5 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                      {lesson.banner ? (
+                                                        <img src={lesson.banner} className="w-12 h-8 rounded-lg object-cover border border-slate-100 shadow-xs" alt="" />
+                                                      ) : (
+                                                        <div className="w-12 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center border border-slate-100 shadow-xs">
+                                                          <LucideImage className="w-4 h-4" />
+                                                        </div>
+                                                      )}
+                                                      <span className="font-bold text-sm text-slate-800 group-hover:text-red-600 transition-colors">{lesson.name}</span>
+                                                    </div>
+                                                  </td>
+                                                  
+                                                  {/* Youtube Link */}
+                                                  <td className="py-3.5 px-4 text-sm font-bold text-slate-600">
+                                                    {lesson.youtubeLink ? (
+                                                      <a
+                                                        href={lesson.youtubeLink}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-1.5 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg text-xs transition-colors"
+                                                      >
+                                                        <Youtube className="w-4 h-4" />
+                                                        مشاهدة الفيديو
+                                                        <ExternalLink className="w-3 h-3" />
+                                                      </a>
+                                                    ) : (
+                                                      <span className="text-slate-400 text-xs">لا يوجد</span>
+                                                    )}
+                                                  </td>
+
+                                                  {/* PDF */}
+                                                  <td className="py-3.5 px-4">
+                                                    {lesson.pdfFile ? (
+                                                      <a
+                                                        href={lesson.pdfFile}
+                                                        download={`${lesson.name}.pdf`}
+                                                        className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-black transition-colors"
+                                                      >
+                                                        <FileText className="w-4 h-4" />
+                                                        ملف ملخص الدرس
+                                                      </a>
+                                                    ) : (
+                                                      <span className="text-slate-400 text-xs font-bold">لا يوجد مرفق</span>
+                                                    )}
+                                                  </td>
+
+                                                  {/* Views Counter */}
+                                                  <td className="py-3.5 px-4 text-sm font-bold text-slate-600">
+                                                    <div className="flex items-center gap-1.5">
+                                                      <span className="px-2 py-0.5 bg-slate-100 rounded-md font-black text-slate-700 text-xs">{lesson.views || 0}</span>
+                                                      <span className="text-slate-300">/</span>
+                                                      <span className="px-2 py-0.5 bg-red-50 text-red-600 rounded-md font-black text-xs">{lesson.maxViews || 5}</span>
+                                                    </div>
+                                                  </td>
+
+                                                  {/* Status */}
+                                                  <td className="py-3.5 px-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black ${lesson.status === "نشط" ? "bg-green-50 text-green-600 border border-green-100" : "bg-slate-100 text-slate-500"}`}>
+                                                      {lesson.status === "نشط" ? (
+                                                        <>
+                                                          <CheckCircle2 className="w-3.5 h-3.5" />
+                                                          نشط
+                                                        </>
+                                                      ) : (
+                                                        <>
+                                                          <XCircle className="w-3.5 h-3.5" />
+                                                          غير نشط
+                                                        </>
+                                                      )}
+                                                    </span>
+                                                  </td>
+
+                                                  {/* Actions */}
+                                                  <td className="py-3.5 px-4 text-center">
+                                                    <div className="inline-flex items-center gap-1.5">
+                                                      <button 
+                                                        onClick={() => handleEdit(lesson)}
+                                                        className="p-2 bg-slate-50 text-slate-600 rounded-xl hover:text-blue-600 hover:bg-blue-50 transition-all border border-slate-100"
+                                                        title="تعديل الدرس"
+                                                      >
+                                                        <Edit className="w-4 h-4" />
+                                                      </button>
+                                                      <button 
+                                                        onClick={() => deleteLesson(lesson.id)}
+                                                        className="p-2 bg-slate-50 text-slate-600 rounded-xl hover:text-red-600 hover:bg-red-50 transition-all border border-slate-100"
+                                                        title="حذف الدرس"
+                                                      >
+                                                        <Trash2 className="w-4 h-4" />
+                                                      </button>
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {/* Unassigned Lessons Section */}
+              {unassignedLessons.length > 0 && (
+                <div className="bg-amber-50/50 rounded-[32px] border border-amber-200/60 p-6 lg:p-8 space-y-6 shadow-xs">
+                  <div className="border-b border-amber-200/60 pb-4 flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center font-black text-lg shadow-xs border border-amber-200/50">
+                        <HelpCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-xl font-black text-amber-900">دروس بحاجة إلى تصنيف</h2>
+                        <p className="text-amber-700/80 text-xs font-medium mt-0.5">دروس مدخلة في النظام ولكن لم يتم ربطها بشكل صحيح بباب أو مادة دراسية.</p>
+                      </div>
+                    </div>
+                    <span className="px-3.5 py-1 bg-amber-100 text-amber-700 rounded-full font-black text-xs border border-amber-200">
+                      {unassignedLessons.length} دروس معلقة
+                    </span>
+                  </div>
+
+                  <div className="bg-white rounded-2xl border border-amber-200/50 overflow-hidden overflow-x-auto">
+                    <table className="w-full text-right border-collapse min-w-[700px]">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-slate-400 text-[11px] font-black uppercase bg-slate-50/50">
+                          <th className="py-3 px-4 text-slate-500">اسم الدرس المعلق</th>
+                          <th className="py-3 px-4 text-slate-500">المرحلة / الصف / الباب</th>
+                          <th className="py-3 px-4 text-slate-500">رابط الفيديو</th>
+                          <th className="py-3 px-4 text-slate-500">المشاهدات</th>
+                          <th className="py-3 px-4 text-slate-500">الحالة</th>
+                          <th className="py-3 px-4 text-center text-slate-500">إجراءات التصنيف</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {unassignedLessons.map((lesson) => (
+                          <tr key={lesson.id} className="hover:bg-amber-50/20 transition-colors group">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                {lesson.banner ? (
+                                  <img src={lesson.banner} className="w-12 h-8 rounded-lg object-cover border border-slate-100" alt="" />
+                                ) : (
+                                  <div className="w-12 h-8 bg-slate-100 text-slate-400 rounded-lg flex items-center justify-center border border-slate-100">
+                                    <LucideImage className="w-4 h-4" />
+                                  </div>
+                                )}
+                                <span className="font-bold text-sm text-slate-800">{lesson.name}</span>
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span className="text-xs font-bold text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-100 inline-flex items-center gap-1.5">
+                                <ArrowLeftRight className="w-3.5 h-3.5" />
+                                {getCategoryName(lesson.categoryId)} • {getClassName(lesson.classId)} • {getChapterName(lesson.chapterId)}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              {lesson.youtubeLink ? (
+                                <a
+                                  href={lesson.youtubeLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-red-600 font-bold hover:underline"
+                                >
+                                  <Youtube className="w-4 h-4" />
+                                  يوتيوب
+                                </a>
+                              ) : (
+                                <span className="text-slate-400 text-xs">لا يوجد</span>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-4 text-xs font-bold text-slate-500">
+                              {lesson.views || 0} / {lesson.maxViews || 5}
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-black ${lesson.status === "نشط" ? "bg-green-50 text-green-600" : "bg-slate-100 text-slate-400"}`}>
+                                {lesson.status}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-center">
+                              <div className="inline-flex items-center gap-1.5">
+                                <button
+                                  onClick={() => handleEdit(lesson)}
+                                  className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl text-xs font-black border border-amber-200/50 transition-colors"
+                                >
+                                  <Edit className="w-3.5 h-3.5" />
+                                  تصنيف الآن
+                                </button>
+                                <button
+                                  onClick={() => deleteLesson(lesson.id)}
+                                  className="p-2 bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl border border-slate-100 transition-all"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      ) : (
+        // Grid Card View (Flat style, enriched with badges)
+        <div className="bg-white rounded-[32px] shadow-sm border border-slate-150 p-6 space-y-6">
+          {displayedLessons.length === 0 ? (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                <Search className="w-8 h-8" />
+              </div>
+              <p className="text-slate-500 font-black">لا توجد دروس مطابقة لمعايير البحث الحالية.</p>
+              <button
+                onClick={clearAllFilters}
+                className="mt-4 px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition-colors"
+              >
+                إعادة تعيين فلاتر البحث
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedLessons.map((lesson) => {
+                const chapter = chapters.find(c => c.id === parseInt(lesson.chapterId));
+                const courseName = getCourseNameByChapter(lesson.chapterId);
+                const className = getClassName(lesson.classId);
+                const categoryName = getCategoryName(lesson.categoryId);
+                
+                return (
+                  <div key={lesson.id} className="group bg-slate-50 rounded-[32px] overflow-hidden border border-slate-100 hover:shadow-xl hover:border-slate-200 transition-all duration-500 flex flex-col justify-between">
+                    <div>
+                      {/* Banner / Card Header */}
+                      <div className="relative h-48 overflow-hidden bg-slate-200">
+                        {lesson.banner ? (
+                          <img src={lesson.banner} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={lesson.name} />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-slate-400 bg-gradient-to-br from-slate-100 to-slate-200">
+                            <LucideImage className="w-12 h-12 stroke-[1.5]" />
+                          </div>
+                        )}
+                        <div className="absolute top-4 right-4 bg-red-600 text-white p-2.5 rounded-xl shadow-lg border border-red-500/20">
+                          <Youtube className="w-5 h-5" />
+                        </div>
+                        {/* Upper Badges */}
+                        <div className="absolute bottom-4 right-4 left-4 flex flex-wrap gap-1.5">
+                          <span className="text-[10px] font-black bg-slate-900/80 backdrop-blur-md text-white px-2.5 py-1 rounded-lg">
+                            {categoryName}
+                          </span>
+                          <span className="text-[10px] font-black bg-red-600/90 backdrop-blur-md text-white px-2.5 py-1 rounded-lg">
+                            {className}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <span className="text-[10px] font-black text-red-600 bg-red-50 px-2.5 py-1 rounded-md border border-red-100 inline-block mb-2">
+                            {courseName}
+                          </span>
+                          <h3 className="text-xl font-black text-slate-800 line-clamp-2 leading-snug group-hover:text-red-600 transition-colors">{lesson.name}</h3>
+                        </div>
+
+                        {/* Hierarchical badge */}
+                        <div className="bg-white p-3 rounded-2xl border border-slate-100 flex items-center gap-2 text-xs font-bold text-slate-500">
+                          <Layers className="w-4 h-4 text-slate-400 shrink-0" />
+                          <span className="truncate">{chapter?.name || "بدون باب أو فصل مركب"}</span>
+                        </div>
+
+                        {/* Counters */}
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-500 px-1">
+                          <span className="flex items-center gap-1.5">
+                            <Eye className="w-4 h-4 text-slate-400" />
+                            شوهد {lesson.views || 0} مرات
+                          </span>
+                          <span className="bg-slate-200 text-slate-700 px-2 py-0.5 rounded-lg text-[10px] font-black">
+                            الحد: {lesson.maxViews || 5} مشاهدات
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Footer */}
+                    <div className="p-6 pt-0">
+                      <div className="flex items-center gap-3 pt-4 border-t border-slate-250/60">
+                        <button 
+                          onClick={() => handleEdit(lesson)}
+                          className="p-2.5 bg-white text-slate-600 rounded-xl hover:text-blue-600 hover:bg-blue-50 hover:shadow-md transition-all border border-slate-100"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => deleteLesson(lesson.id)}
+                          className="p-2.5 bg-white text-slate-600 rounded-xl hover:text-red-600 hover:bg-red-50 hover:shadow-md transition-all border border-slate-100"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                        
+                        <div className="mr-auto flex items-center gap-2">
+                          {lesson.pdfFile && (
+                            <FileText className="w-5 h-5 text-blue-500 stroke-[2.5]" title="يحتوي على ملف PDF" />
+                          )}
+                          <span className={`text-[10px] font-black px-2.5 py-1 rounded-full ${lesson.status === "نشط" ? "bg-green-50 text-green-600 border border-green-100" : "bg-slate-200/60 text-slate-500"}`}>
+                            {lesson.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lesson Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[5000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh] border border-white/20 animate-in fade-in zoom-in duration-300">
-             <div className="bg-slate-950 p-8 text-white flex items-center justify-between">
-                <div>
-                   <h3 className="text-2xl font-black">{editingLesson ? "تعديل درس" : "إضافة درس جديد"}</h3>
-                   <p className="text-slate-400 text-sm mt-1">أدخل بيانات الدرس والروابط المرفقة</p>
+          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsModalOpen(false)}></div>
+          <div className="relative bg-white rounded-[40px] shadow-2xl w-full max-w-2xl overflow-y-auto max-h-[90vh] border border-white/20 animate-in fade-in zoom-in-95 duration-350 flex flex-col">
+             {/* Header */}
+             <div className="bg-slate-950 p-8 text-white flex items-center justify-between shrink-0 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-48 h-48 bg-red-600/10 rounded-full blur-3xl"></div>
+                <div className="z-10">
+                   <h3 className="text-2xl font-black">{editingLesson ? "تعديل بيانات الدرس" : "إضافة درس جديد لطلابك"}</h3>
+                   <p className="text-slate-400 text-sm mt-1.5 font-medium">املأ الخيارات خطوة بخطوة لربط الدرس بالباب والمادة المناسبة.</p>
                 </div>
-                <button onClick={() => setIsModalOpen(false)} className="pr-2 text-slate-400 hover:text-white transition-colors">
-                   <Plus className="w-8 h-8 rotate-45" />
+                <button onClick={() => setIsModalOpen(false)} className="z-10 p-2 text-slate-400 hover:text-white transition-colors bg-slate-900 rounded-xl hover:scale-105 active:scale-95">
+                   <Plus className="w-6 h-6 rotate-45 stroke-[3px]" />
                 </button>
              </div>
 
-             <form onSubmit={handleSubmit} className="p-8 space-y-6">
+             {/* Form body */}
+             <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto flex-1">
+                {/* Lesson Name */}
                 <div className="space-y-2">
                     <label className="text-sm font-black text-slate-700 block pr-2">اسم الدرس</label>
                     <input
                         type="text"
-                        className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all"
+                        placeholder="مثال: الدرس الأول - التيار الكهربي وقانون أوم"
+                        className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all text-slate-700"
                         value={formData.name}
                         onChange={(e) => setFormData({...formData, name: e.target.value})}
                         required
                     />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                        <label className="text-sm font-black text-slate-700 block pr-2">المرحلة</label>
-                        <select
-                            className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold text-sm"
-                            value={formData.categoryId}
-                            onChange={(e) => setFormData({...formData, categoryId: e.target.value})}
-                            required
-                        >
-                            <option value="">اختر</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-black text-slate-700 block pr-2">الصف</label>
-                        <select
-                            className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold text-sm"
-                            value={formData.classId}
-                            onChange={(e) => setFormData({...formData, classId: e.target.value})}
-                            required
-                        >
-                            <option value="">اختر</option>
-                            {filteredClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-black text-slate-700 block pr-2">الباب</label>
-                        <select
-                            className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold text-sm"
-                            value={formData.chapterId}
-                            onChange={(e) => setFormData({...formData, chapterId: e.target.value})}
-                            required
-                        >
-                            <option value="">اختر</option>
-                            {filteredChapters.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
-                    </div>
-                </div>
+                {/* Hierarchical Cascading Dropdowns */}
+                <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100 space-y-4">
+                  <span className="text-xs font-black text-slate-500 block mb-1 pr-1">تحديد التصنيف والمكان الدراسي للدرس</span>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Stage Category Dropdown */}
+                      <div className="space-y-2">
+                          <label className="text-xs font-black text-slate-600 block pr-1">المرحلة الدراسية</label>
+                          <select
+                              className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-red-500 focus:outline-none font-black text-sm bg-white cursor-pointer text-slate-700"
+                              value={formData.categoryId}
+                              onChange={handleModalCategoryChange}
+                              required
+                          >
+                              <option value="">اختر المرحلة...</option>
+                              {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                      </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-black text-slate-700 block pr-2">رابط فيديو اليوتيوب</label>
-                    <input
-                        type="url"
-                        placeholder="https://youtube.com/watch?v=..."
-                        className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all"
-                        value={formData.youtubeLink}
-                        onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
-                        required
-                    />
-                </div>
+                      {/* Class Grade Dropdown */}
+                      <div className="space-y-2">
+                          <label className="text-xs font-black text-slate-600 block pr-1">الصف الدراسي</label>
+                          <select
+                              className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-red-500 focus:outline-none font-black text-sm bg-white disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-slate-700"
+                              value={formData.classId}
+                              onChange={handleModalClassChange}
+                              disabled={!formData.categoryId}
+                              required
+                          >
+                              <option value="">اختر الصف...</option>
+                              {modalClassesList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                      </div>
+                  </div>
 
-                <div className="space-y-2">
-                    <label className="text-sm font-black text-slate-700 block pr-2">حد المشاهدات لكل طالب</label>
-                    <input
-                        type="number"
-                        min="1"
-                        max="100"
-                        className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all"
-                        value={formData.maxViews}
-                        onChange={(e) => setFormData({...formData, maxViews: parseInt(e.target.value) || 5})}
-                        required
-                    />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Subject Course Dropdown */}
+                      <div className="space-y-2">
+                          <label className="text-xs font-black text-slate-600 block pr-1">المادة الدراسية / الكورس</label>
+                          <select
+                              className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-red-500 focus:outline-none font-black text-sm bg-white disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-slate-700"
+                              value={formData.courseId}
+                              onChange={handleModalCourseChange}
+                              disabled={!formData.classId}
+                              required
+                          >
+                              <option value="">اختر المادة...</option>
+                              {modalCoursesList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                      </div>
+
+                      {/* Chapter Dropdown */}
+                      <div className="space-y-2">
+                          <label className="text-xs font-black text-slate-600 block pr-1">الباب / الفصل الدراسي</label>
+                          <select
+                              className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-red-500 focus:outline-none font-black text-sm bg-white disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer text-slate-700"
+                              value={formData.chapterId}
+                              onChange={(e) => setFormData({...formData, chapterId: e.target.value})}
+                              disabled={!formData.courseId}
+                              required
+                          >
+                              <option value="">اختر الباب...</option>
+                              {modalChaptersList.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                          </select>
+                      </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* YouTube Video URL */}
+                  <div className="space-y-2">
+                      <label className="text-sm font-black text-slate-700 block pr-2">رابط فيديو اليوتيوب</label>
+                      <input
+                          type="url"
+                          placeholder="https://youtube.com/watch?v=..."
+                          className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all text-slate-700"
+                          value={formData.youtubeLink}
+                          onChange={(e) => setFormData({...formData, youtubeLink: e.target.value})}
+                          required
+                      />
+                  </div>
+
+                  {/* Max Student Views */}
+                  <div className="space-y-2">
+                      <label className="text-sm font-black text-slate-700 block pr-2">حد المشاهدات لكل طالب</label>
+                      <input
+                          type="number"
+                          min="1"
+                          max="1000"
+                          className="w-full px-4 py-4 rounded-2xl border-2 border-slate-100 focus:border-red-500 focus:outline-none font-bold transition-all text-slate-700"
+                          value={formData.maxViews}
+                          onChange={(e) => setFormData({...formData, maxViews: parseInt(e.target.value) || 5})}
+                          required
+                      />
+                  </div>
+                </div>
+
+                {/* Image and PDF Upload */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Banner Image */}
                     <div className="space-y-2">
-                        <label className="text-sm font-black text-slate-700 block pr-2">بانر الفيديو</label>
+                        <label className="text-sm font-black text-slate-700 block pr-2">بانر الدرس / صورة مصغرة</label>
                         <ImageUpload 
                             value={formData.banner} 
                             onChange={(img) => setFormData({...formData, banner: img})} 
                         />
                     </div>
+                    
+                    {/* PDF Summary Document */}
                     <div className="space-y-2">
-                        <label className="text-sm font-black text-slate-700 block pr-2">ملف PDF (ملخص الدرس)</label>
+                        <label className="text-sm font-black text-slate-700 block pr-2">ملخص أو ملزمة الدرس (ملف PDF)</label>
                         <div className="relative group/pdf h-[200px] border-2 border-dashed border-slate-200 rounded-[32px] flex flex-col items-center justify-center bg-slate-50 hover:bg-white hover:border-blue-400 transition-all cursor-pointer">
                             <input 
                                 type="file" 
@@ -288,16 +1077,32 @@ export default function LessonsManagement() {
                                 onChange={handlePdfUpload}
                             />
                             <FileText className="w-12 h-12 text-slate-300 mb-2 group-hover/pdf:text-blue-500 transition-colors" />
-                            <span className="text-sm font-bold text-slate-500 group-hover/pdf:text-blue-600">
-                                {formData.pdfFile ? "تم اختيار ملف" : "اضغط لرفع ملف PDF"}
+                            <span className="text-sm font-black text-slate-600 group-hover/pdf:text-blue-600 transition-colors">
+                                {formData.pdfFile ? "تم اختيار ملف PDF بنجاح" : "اضغط لرفع ملف PDF هنا"}
                             </span>
+                            <span className="text-[10px] text-slate-400 font-bold mt-1">يقبل الملفات بصيغة PDF فقط</span>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex gap-4 pt-6">
-                    <button type="submit" className="flex-1 py-4 bg-red-600 text-white font-black rounded-2xl shadow-xl shadow-red-200 hover:bg-red-700 transition-all">
-                        {editingLesson ? "حفظ التغييرات" : "إضافة الدرس"}
+                {/* Lesson Active Status Option */}
+                <div className="flex items-center gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                  <input
+                    type="checkbox"
+                    id="modalStatus"
+                    className="w-5.5 h-5.5 accent-red-600 rounded cursor-pointer"
+                    checked={formData.status === "نشط"}
+                    onChange={(e) => setFormData({ ...formData, status: e.target.checked ? "نشط" : "غير نشط" })}
+                  />
+                  <label htmlFor="modalStatus" className="text-sm font-black text-slate-700 cursor-pointer select-none">
+                    تفعيل الدرس فوراً (يظهر للطلاب في حساباتهم)
+                  </label>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="flex gap-4 pt-4 border-t border-slate-100">
+                    <button type="submit" className="flex-1 py-4 bg-gradient-to-r from-red-600 to-rose-600 text-white font-black rounded-2xl shadow-xl shadow-red-200 hover:from-red-700 hover:to-rose-700 transition-all">
+                        {editingLesson ? "حفظ وتعديل الدرس" : "إضافة الدرس الآن"}
                     </button>
                     <button type="button" onClick={() => setIsModalOpen(false)} className="px-8 py-4 bg-slate-100 text-slate-600 font-black rounded-2xl hover:bg-slate-200 transition-all">
                         إلغاء

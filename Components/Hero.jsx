@@ -8,9 +8,11 @@ import {
   DialogTitle,
 } from "@/Components/ui/dialog";
 import { AspectRatio } from "@/Components/ui/aspect-ratio";
+import { useGlobalStore } from "@/lib/store";
 
 function Hero() {
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const { currentUser } = useGlobalStore();
   
   
   return (
@@ -45,16 +47,41 @@ function Hero() {
             </p>
               
             <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
-              <a href="/register">
-                <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
-                  ابدأ رحلتك التعليمية الآن
-                </button>
-              </a>
-              <a href="/parent/login">
-                <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm border-2 border-slate-100 hover:border-red-100 hover:text-red-600 transition-all duration-300 text-lg flex items-center justify-center gap-3">
-                  متابعة ولي الأمر
-                </button>
-              </a>
+              {currentUser ? (
+                <>
+                  {currentUser.role === "admin" ? (
+                    <a href="/admin">
+                      <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
+                        لوحة التحكم (الإدارة)
+                      </button>
+                    </a>
+                  ) : (
+                    <a href="/courses">
+                      <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
+                        تصفح المسارات التعليمية
+                      </button>
+                    </a>
+                  )}
+                  <a href="/profile">
+                    <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm border-2 border-slate-100 hover:border-red-100 hover:text-red-600 transition-all duration-300 text-lg">
+                      عرض حسابي الشخصي
+                    </button>
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a href="/register">
+                    <button className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-2xl shadow-lg shadow-red-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-lg">
+                      ابدأ رحلتك التعليمية الآن
+                    </button>
+                  </a>
+                  <a href="/parent/login">
+                    <button className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm border-2 border-slate-100 hover:border-red-100 hover:text-red-600 transition-all duration-300 text-lg flex items-center justify-center gap-3">
+                      متابعة ولي الأمر
+                    </button>
+                  </a>
+                </>
+              )}
             </div>
 
             {/* Stats */}
@@ -117,7 +144,7 @@ function Hero() {
         </div>
       </main>
 
-      <div className="relative z-10 lg:-mt-20 px-4 pb-20 max-w-7xl mx-auto w-full mt-10 lg:mt-4">
+      {/* <div className="relative z-10 lg:-mt-20 px-4 pb-20 max-w-7xl mx-auto w-full mt-10 lg:mt-4">
         <div className="bg-white rounded-[32px] md:rounded-[40px] p-6 md:p-12 shadow-2xl flex flex-col md:flex-row-reverse items-center gap-8 md:gap-12 overflow-hidden relative">
           <div className="flex-1 space-y-6 text-center md:text-right">
             <div className="inline-block px-4 py-1.5 bg-red-100 text-red-600 rounded-full text-xs font-bold tracking-wider uppercase">
@@ -170,10 +197,10 @@ function Hero() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Video Modal */}
-      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+      {/* <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
         <DialogContent className="sm:max-w-4xl p-0 overflow-hidden bg-black border-gray-800 flex flex-col">
           <DialogHeader className="sr-only">
             <DialogTitle>Showcase Video</DialogTitle>
@@ -190,7 +217,7 @@ function Hero() {
             </AspectRatio>
           </div>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   );
 }

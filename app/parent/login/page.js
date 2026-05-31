@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useGlobalStore } from "@/lib/store";
 import { Phone, ArrowRight, ShieldCheck, Users } from "lucide-react";
@@ -8,11 +8,17 @@ import Link from "next/link";
 
 export default function ParentLogin() {
   const router = useRouter();
-  const { loginParent } = useGlobalStore();
+  const { loginParent, currentParent } = useGlobalStore();
   const [parentPhone, setParentPhone] = useState("");
   const [studentPhone, setStudentPhone] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (currentParent) {
+      router.push("/parent/dashboard");
+    }
+  }, [currentParent, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
