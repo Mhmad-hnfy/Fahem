@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { useGlobalStore } from "@/lib/store";
+import { useRouter } from "next/navigation";
 import { 
   Plus, 
   Trash2, 
@@ -25,7 +26,10 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
-  ArrowLeftRight
+  ArrowLeftRight,
+  MessageCircle,
+  Send,
+  X,
 } from "lucide-react";
 import ImageUpload from "@/Components/ImageUpload";
 
@@ -41,8 +45,10 @@ export default function LessonsManagement() {
     deleteLesson 
   } = useGlobalStore();
 
+  const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
+  const [whatsappPrompt, setWhatsappPrompt] = useState(null); // { lessonName, classId }
   const [searchQuery, setSearchQuery] = useState("");
   
   // Page-level filters
@@ -237,7 +243,7 @@ export default function LessonsManagement() {
     setFilterStatus("");
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     const submissionData = {
@@ -252,11 +258,18 @@ export default function LessonsManagement() {
 
     if (editingLesson) {
       updateLesson(editingLesson.id, submissionData);
+      setIsModalOpen(false);
+      resetForm();
     } else {
-      addLesson(submissionData);
+      await addLesson(submissionData);
+      setIsModalOpen(false);
+      // Show WhatsApp notification prompt
+      setWhatsappPrompt({
+        lessonName: formData.name,
+        classId: formData.classId,
+      });
+      resetForm();
     }
-    setIsModalOpen(false);
-    resetForm();
   };
 
   const resetForm = () => {
@@ -1109,6 +1122,56 @@ export default function LessonsManagement() {
                     </button>
                 </div>
              </form>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Notification Prompt */}
+      {whatsappPrompt && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-[28px] w-full max-w-md shadow-2xl p-8 text-center" dir="rtl">
+            {/* Icon */}
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-green-600" />
+            </div>
+
+            <h2 className="text-xl font-black text-slate-900 mb-2">
+              🎉 تم إضافة الدرس بنجاح!
+            </h2>
+            <p className="text-slate-500 font-medium text-sm mb-1">
+              درس: <span className="font-black text-slate-800">{whatsappPrompt.lessonName}</span>
+            </p>
+            <p className="text-slate-400 text-sm mb-6">
+              هل تريد إرسال إشعار واتساب للطلاب المسجلين في هذا الصف؟
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const cls = classes.find(c => String(c.id) === String(whatsappPrompt.classId));
+                  const msg = `🎓 *منصة فاهم*\n\nتم نشر درس جديد!\n\n📚 *${whatsappPrompt.lessonName}*${cls ? `\n🏫 الصف: ${cls.name}` : ''}\n\nقم بتسجيل الدخول الآن لمشاهدة الدرس 👇\nfahem.com`;
+                  const encoded = encodeURIComponent(msg);
+                  router.push(`/admin/whatsapp?classId=${whatsappPrompt.classId}&msg=${encoded}`);
+                  setWhatsappPrompt(null);
+                }}
+                className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-600 hover:bg-green-700 text-white font-black rounded-xl transition-all shadow-md shadow-green-200"
+              >
+                <Send className="w-4 h-4" />
+                إرسال إشعار واتساب
+              </button>
+              <button
+                onClick={() => setWhatsappPrompt(null)}
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-black rounded-xl transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => setWhatsappPrompt(null)}
+              className="mt-3 text-xs text-slate-400 hover:text-slate-600 font-bold transition-colors"
+            >
+              تخطي — سأرسل لاحقاً
+            </button>
           </div>
         </div>
       )}

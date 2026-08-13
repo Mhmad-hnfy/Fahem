@@ -64,29 +64,43 @@ export default function CategoryPage({ params }) {
         </div>
 
         {/* Classes Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-5xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-8 max-w-5xl mx-auto">
           {categoryClasses.map((cls) => (
             <Link
               href={`/class/${cls.id}`}
               key={cls.id}
-              className="group bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500"
+              className="w-full sm:w-[380px] group bg-white text-slate-800 rounded-2xl sm:rounded-[24px] flex flex-col overflow-hidden shadow-xl border border-red-50 hover:shadow-red-500/20 hover:-translate-y-2 transition-all duration-500"
             >
-              <div className="w-12 h-12 sm:w-20 sm:h-20 mb-3 sm:mb-6 bg-red-50 text-red-600 rounded-[14px] sm:rounded-[20px] flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-500">
-                <BookOpen className="w-6 h-6 sm:w-10 sm:h-10" />
+              {/* Image */}
+              <div className="relative h-[190px] sm:h-[240px] overflow-hidden bg-red-50">
+                {cls.image ? (
+                  <img
+                    src={cls.image}
+                    alt={cls.name}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-red-50 to-rose-100">
+                    <BookOpen className="w-16 h-16 text-red-300" />
+                  </div>
+                )}
               </div>
-              <h3 className="text-base sm:text-2xl font-black text-slate-900 group-hover:text-red-600 transition-colors line-clamp-1">
-                {cls.name}
-              </h3>
-              <div className="mt-2 sm:mt-4 text-[10px] sm:text-sm font-bold text-slate-500">
-                <span>{getCoursesCount(cls.id)} مادة</span>
+
+              {/* Info */}
+              <div className="px-5 py-4 sm:px-7 sm:py-5 flex flex-col gap-2 bg-white relative">
+                <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-red-500 to-rose-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <h3 className="text-base sm:text-xl font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors text-right">
+                  {cls.name}
+                </h3>
+                <div className="w-full h-px bg-red-50 my-1" />
+                <p className="text-xs sm:text-sm text-slate-500 font-medium text-right">
+                  {getCoursesCount(cls.id)} مادة دراسية
+                </p>
               </div>
-              <span className="mt-4 sm:mt-6 px-3 py-1.5 sm:px-6 sm:py-2.5 rounded-lg sm:rounded-xl bg-slate-50 text-slate-600 font-bold group-hover:bg-slate-900 group-hover:text-white transition-colors duration-500 text-[10px] sm:text-sm w-full">
-                تصفح المواد
-              </span>
             </Link>
           ))}
           {categoryClasses.length === 0 && (
-            <p className="col-span-full text-center text-slate-500 font-bold py-10">
+            <p className="w-full text-center text-slate-500 font-bold py-10">
               لا توجد صفوف دراسية مفعلة في هذه المرحلة حالياً.
             </p>
           )}

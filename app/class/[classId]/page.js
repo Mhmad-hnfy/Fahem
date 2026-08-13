@@ -74,56 +74,68 @@ export default function ClassPage({ params }) {
         </div>
 
         {/* Courses Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-8 max-w-6xl mx-auto">
+        <div className="flex flex-wrap justify-center gap-4 sm:gap-8 max-w-6xl mx-auto">
           {classCourses.map((course) => {
             const teacher = getTeacher(course.teacherId);
 
             return (
               <div
                 key={course.id}
-                className="group bg-white rounded-2xl sm:rounded-[32px] p-4 sm:p-8 flex flex-col items-center justify-center text-center shadow-lg border border-slate-100 hover:shadow-xl hover:-translate-y-2 transition-all duration-500 relative overflow-hidden"
+                className="w-full sm:w-[380px] group bg-white text-slate-800 rounded-2xl sm:rounded-[24px] flex flex-col overflow-hidden shadow-xl border border-red-50 hover:shadow-red-500/20 hover:-translate-y-2 transition-all duration-500"
               >
-                <div className="absolute top-0 right-0 w-16 h-16 sm:w-32 sm:h-32 bg-red-50 rounded-full -mr-8 -mt-8 sm:-mr-16 sm:-mt-16 transition-transform group-hover:scale-110 duration-500"></div>
-
-                <div className="w-12 h-12 sm:w-20 sm:h-20 mb-3 sm:mb-6 bg-red-100 text-red-600 rounded-[14px] sm:rounded-[20px] flex items-center justify-center z-10 overflow-hidden relative shadow-sm">
+                {/* Image */}
+                <div className="relative h-[190px] sm:h-[240px] overflow-hidden bg-red-50">
                   {course.image ? (
-                    <img src={course.image} alt={course.name} className="w-full h-full object-cover" />
+                    <img
+                      src={course.image}
+                      alt={course.name}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    />
                   ) : (
-                    <BookOpen className="w-6 h-6 sm:w-10 sm:h-10" />
+                    <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-red-50 to-rose-100">
+                      <BookOpen className="w-16 h-16 text-red-300" />
+                    </div>
                   )}
                 </div>
 
-                <h3 className="text-base sm:text-2xl font-black text-slate-900 mb-1 sm:mb-2 z-10 relative line-clamp-1">
-                  {course.name}
-                </h3>
+                {/* Info */}
+                <div className="px-5 py-4 sm:px-7 sm:py-5 flex flex-col gap-2 bg-white relative">
+                  <div className="absolute top-0 right-0 left-0 h-[3px] bg-gradient-to-r from-red-500 to-rose-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                {teacher && (
+                  <h3 className="text-base sm:text-xl font-black tracking-tight text-slate-900 group-hover:text-red-600 transition-colors text-right line-clamp-1">
+                    {course.name}
+                  </h3>
+
+                  <div className="w-full h-px bg-red-50 my-1" />
+
+                  {teacher && (
+                    <Link
+                      href={`/teachers/${teacher.id}`}
+                      className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 hover:text-red-600 transition-colors"
+                    >
+                      <img
+                        src={teacher.image}
+                        alt={teacher.name}
+                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-slate-200"
+                      />
+                      <span className="line-clamp-1">{teacher.name}</span>
+                    </Link>
+                  )}
+
                   <Link
-                    href={`/teachers/${teacher.id}`}
-                    className="inline-flex items-center gap-1 sm:gap-2 mt-1 sm:mt-4 text-[10px] sm:text-sm font-bold text-slate-600 hover:text-blue-600 hover:bg-blue-50 px-2 py-1 sm:px-4 sm:py-2 rounded-full transition-all z-10"
+                    href={`/course/${course.id}`}
+                    className="mt-2 px-4 py-2.5 w-full rounded-xl bg-red-600 text-white font-bold shadow-md hover:bg-red-700 shadow-red-200 transition-all duration-300 text-xs sm:text-sm flex items-center justify-center gap-1.5"
                   >
-                    <img
-                      src={teacher.image}
-                      alt={teacher.name}
-                      className="w-4 h-4 sm:w-6 sm:h-6 rounded-full object-cover border border-slate-200"
-                    />
-                    <span className="line-clamp-1">{teacher.name}</span>
+                    <Video className="w-3.5 h-3.5" />
+                    تفاصيل الكورس
                   </Link>
-                )}
-
-                <Link
-                  href={`/course/${course.id}`}
-                  className="mt-4 sm:mt-8 px-3 py-2 w-full rounded-xl sm:rounded-2xl bg-red-600 text-white font-bold shadow-md hover:bg-red-700 shadow-red-200 transition-all duration-300 text-[10px] sm:text-sm flex items-center justify-center gap-1.5 z-10"
-                >
-                  <Video className="w-3.5 h-3.5" />
-                  تفاصيل الكورس
-                </Link>
+                </div>
               </div>
             );
           })}
 
           {classCourses.length === 0 && (
-            <div className="col-span-full text-center py-20 bg-white rounded-[32px] border border-slate-100 shadow-sm">
+            <div className="w-full text-center py-20 bg-white rounded-[32px] border border-slate-100 shadow-sm">
               <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
                 <BookOpen className="w-10 h-10" />
               </div>
