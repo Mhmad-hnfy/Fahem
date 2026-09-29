@@ -144,7 +144,7 @@ create policy "Anon delete notifications" on public.notifications for delete usi
 -- ── 3. SECURE CODE REDEMPTION FUNCTION ────────────────────────────
 create or replace function public.verify_and_use_code(
   p_code text,
-  p_user_id bigint
+  p_user_id uuid
 )
 returns json
 language plpgsql
