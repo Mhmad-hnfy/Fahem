@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useGlobalStore } from "@/lib/store";
 import { useRouter } from "next/navigation";
 import { 
@@ -30,6 +30,7 @@ import {
   MessageCircle,
   Send,
   X,
+  GripVertical,
 } from "lucide-react";
 import ImageUpload from "@/Components/ImageUpload";
 
@@ -42,7 +43,8 @@ export default function LessonsManagement() {
     lessons, 
     addLesson, 
     updateLesson, 
-    deleteLesson 
+    deleteLesson,
+    reorderLessons,
   } = useGlobalStore();
 
   const router = useRouter();
@@ -50,6 +52,14 @@ export default function LessonsManagement() {
   const [editingLesson, setEditingLesson] = useState(null);
   const [whatsappPrompt, setWhatsappPrompt] = useState(null); // { lessonName, classId }
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Drag-and-drop state for lesson reordering
+  const dragLessonId = useRef(null);
+  const dragOverLessonId = useRef(null);
+  const [draggingChapterId, setDraggingChapterId] = useState(null);
+  
+  // Local lesson order state per chapter (for optimistic UI)
+  const [chapterLessonOrder, setChapterLessonOrder] = useState({});
   
   // Page-level filters
   const [filterCategory, setFilterCategory] = useState("");
@@ -232,6 +242,42 @@ export default function LessonsManagement() {
 
   const collapseAll = () => {
     setExpandedChapters({});
+  };
+
+  // Drag-and-drop reorder handler
+  const handleDragEnd = (chapterId, chapterLessons) => {
+    const fromId = dragLessonId.current;
+    const toId = dragOverLessonId.current;
+    if (!fromId || !toId || fromId === toId) {
+      dragLessonId.current = null;
+      dragOverLessonId.current = null;
+      setDraggingChapterId(null);
+      return;
+    }
+
+    // Get current order for this chapter
+    const currentOrder = chapterLessonOrder[chapterId] || chapterLessons;
+    const fromIdx = currentOrder.findIndex((l) => l.id === fromId);
+    const toIdx = currentOrder.findIndex((l) => l.id === toId);
+
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const reordered = [...currentOrder];
+    const [moved] = reordered.splice(fromIdx, 1);
+    reordered.splice(toIdx, 0, moved);
+
+    // Assign new sortOrder values
+    const withOrder = reordered.map((l, idx) => ({ ...l, sortOrder: idx + 1 }));
+
+    // Update local UI state
+    setChapterLessonOrder((prev) => ({ ...prev, [chapterId]: withOrder }));
+
+    // Persist to DB
+    reorderLessons(withOrder.map((l) => ({ id: l.id, sortOrder: l.sortOrder })));
+
+    dragLessonId.current = null;
+    dragOverLessonId.current = null;
+    setDraggingChapterId(null);
   };
 
   const clearAllFilters = () => {
@@ -595,9 +641,14 @@ export default function LessonsManagement() {
                                       {/* Accordion Content */}
                                       {isExpanded && (
                                         <div className="p-4 bg-white overflow-x-auto">
-                                          <table className="w-full text-right border-collapse min-w-[700px]">
+                                          <div className="mb-2 flex items-center gap-1.5 text-[10px] font-bold text-slate-400 select-none">
+                                            <GripVertical className="w-3 h-3" />
+                                            <span>اسحب الدروس لتغيير ترتيبها</span>
+                                          </div>
+                                          <table className="w-full text-right border-collapse min-w-[750px]">
                                             <thead>
                                               <tr className="border-b border-slate-100 text-slate-400 text-[11px] font-black uppercase">
+                                                <th className="pb-3 px-2 w-8"></th>
                                                 <th className="pb-3 px-4 text-slate-500">اسم الدرس</th>
                                                 <th className="pb-3 px-4 text-slate-500">رابط الفيديو</th>
                                                 <th className="pb-3 px-4 text-slate-500">الملف المرفق</th>
@@ -607,8 +658,30 @@ export default function LessonsManagement() {
                                               </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-50">
-                                              {ch.lessons.map((lesson) => (
-                                                <tr key={lesson.id} className="hover:bg-slate-50/50 transition-colors group">
+                                              {(chapterLessonOrder[ch.id] || ch.lessons).map((lesson) => (
+                                                <tr
+                                                  key={lesson.id}
+                                                  draggable
+                                                  onDragStart={() => {
+                                                    dragLessonId.current = lesson.id;
+                                                    setDraggingChapterId(ch.id);
+                                                  }}
+                                                  onDragEnter={() => {
+                                                    dragOverLessonId.current = lesson.id;
+                                                  }}
+                                                  onDragEnd={() => handleDragEnd(ch.id, ch.lessons)}
+                                                  onDragOver={(e) => e.preventDefault()}
+                                                  className={`transition-colors group ${
+                                                    draggingChapterId === ch.id && dragLessonId.current === lesson.id
+                                                      ? "opacity-40 bg-red-50"
+                                                      : "hover:bg-slate-50/50"
+                                                  }`}
+                                                >
+                                                  {/* Drag Handle */}
+                                                  <td className="py-3.5 px-2">
+                                                    <GripVertical className="w-4 h-4 text-slate-300 hover:text-slate-500 transition-colors cursor-grab active:cursor-grabbing mx-auto" />
+                                                  </td>
+
                                                   {/* Name */}
                                                   <td className="py-3.5 px-4">
                                                     <div className="flex items-center gap-3">

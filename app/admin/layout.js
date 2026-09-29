@@ -61,7 +61,7 @@ const menuGroups = [
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { currentUser, isLoaded } = useGlobalStore();
+  const { currentUser, isLoaded, logoutUser } = useGlobalStore();
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -170,7 +170,10 @@ export default function AdminLayout({ children }) {
             <span>العودة للموقع</span>
           </Link>
           <button
-            onClick={() => router.push("/login")}
+            onClick={async () => {
+              await logoutUser();
+              router.push("/login");
+            }}
             className="flex w-full items-center gap-3 px-4 py-2.5 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-950/30 transition-all font-bold text-sm"
           >
             <LogOut className="w-4 h-4" />
